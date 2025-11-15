@@ -4,1222 +4,850 @@
   <meta charset="UTF-8">
   <title>Dashboard Hồ & Trạm Sông</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
-
-  <!-- Chart.js -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      overscroll-behavior: none;
-    }
-
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-    
-    .lake-rect-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .lake-rect-icon div {
-      border-radius: 3px;
-      box-shadow:
-        0 0 0 1px rgba(15, 118, 110, 0.2),
-        0 1px 2px rgba(15, 23, 42, 0.12);
-    }
-
-    .tab-btn-basins {
-      padding: 8px 16px;
-      border-radius: 999px;
-      background-color: #e2e8f0;
-      color: #475569;
-      font-weight: 500;
-      font-size: 0.875rem;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-      border: none;
-    }
-    .tab-btn-basins:hover {
-      background-color: #cbd5f5;
-    }
-    .tab-btn-basins.active {
-      background-color: #2563eb;
-      color: white;
-    }
-
-    .station-pill {
-      border-radius: 999px;
-      padding: 2px 6px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .scrollbar-thin::-webkit-scrollbar {
-      width: 6px;
-    }
-    .scrollbar-thin::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-      background-color: #cbd5f5;
-      border-radius: 999px;
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    /* Compact Leaflet popup styling for station popups */
-    .station-popup .leaflet-popup-content-wrapper {
-      padding: 4px;
-    }
-    .station-popup .leaflet-popup-content {
-      margin: 4px;
-    }
-    .station-popup {
-      margin: 0;
-    }
-    .station-popup .leaflet-popup-close-button {
-      top: 4px;
-      right: 4px;
-    }
-    .station-popup .popup-card-wrapper {
-      max-height: none;
-      overflow: visible;
-    }
-
-    @media (max-width: 1023px) {
-      #map-container {
-        height: 320px;
+      body { font-family: 'Inter', sans-serif; }
+      
+      /* Accordion Transition */
+      .accordion-content {
+        transition: max-height 0.3s ease-out;
+        max-height: 0;
+        overflow: hidden;
       }
-    }
-  </style>
+      
+      /* Custom scrollbar */
+      .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+      .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+      .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5f5; border-radius: 99px; }
+      
+      /* Map Icons */
+      .lake-icon div {
+        box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.2), 0 1px 2px rgba(15, 23, 42, 0.12);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .custom-popup .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+      }
+      .custom-popup .leaflet-popup-content {
+        margin: 0;
+      }
+      .tab-btn { transition: all 0.2s; }
+      .tab-btn.active { background-color: #2563eb; color: white; }
+    </style>
 </head>
-<body class="bg-slate-50 h-screen overflow-hidden">
+<body class="bg-slate-50 h-screen flex flex-col overflow-hidden">
 
-<script>
-  // Global function for collapsible sections
-  function toggleSection(type) {
-    if (type === 'lake') {
-      window.lakeSectionOpen = !window.lakeSectionOpen;
-      const content = document.getElementById('lake-section-content');
-      const chevron = document.getElementById('lake-chevron');
-      
-      if (window.lakeSectionOpen) {
-        content.style.maxHeight = content.scrollHeight + 'px';
-        chevron.style.transform = 'rotate(0deg)';
-      } else {
-        content.style.maxHeight = '0px';
-        chevron.style.transform = 'rotate(-90deg)';
-      }
-    } else if (type === 'river') {
-      window.riverSectionOpen = !window.riverSectionOpen;
-      const content = document.getElementById('river-section-content');
-      const chevron = document.getElementById('river-chevron');
-      
-      if (window.riverSectionOpen) {
-        content.style.maxHeight = content.scrollHeight + 'px';
-        chevron.style.transform = 'rotate(0deg)';
-      } else {
-        content.style.maxHeight = '0px';
-        chevron.style.transform = 'rotate(-90deg)';
-      }
-    }
-  }
-  
-  // Initialize section states
-  window.lakeSectionOpen = true;
-  window.riverSectionOpen = true;
-</script>
-
-<div class="flex flex-col h-screen">
-  <!-- Header -->
-  <header class="flex-shrink-0 bg-white border-b border-slate-200 px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
-    <div class="min-w-0">
-      <h1 class="text-lg lg:text-2xl font-bold text-slate-900 truncate">
-        Theo dõi hồ chứa & trạm sông theo lưu vực
-      </h1>
-      <p id="status-badge" class="text-xs text-slate-500 mt-1">
-        Đang tải dữ liệu...
-      </p>
-    </div>
-    <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
-      <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 text-blue-700">
-        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-        Google Hybrid basemap
-      </span>
+  <header class="flex-none bg-white border-b border-slate-200 px-4 py-2 shadow-sm z-20">
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <input type="text" id="search-input" placeholder="Tìm vị trí hoặc tỉnh thành" 
+             class="w-full pl-10 pr-4 py-2 border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+             onfocus="Search.showSuggestions()" onblur="setTimeout(Search.hideSuggestions, 200)" onkeyup="Search.filter()">
+      <div id="search-suggestions" class="absolute mt-1 w-full bg-white rounded-lg shadow-lg overflow-hidden hidden max-h-60 overflow-y-auto custom-scroll">
+        <ul id="suggestions-list">
+          <!-- Suggestions will be populated by JS -->
+        </ul>
+      </div>
     </div>
   </header>
 
-  <!-- Basin Tabs -->
-  <div class="flex-shrink-0 bg-white border-b border-slate-200">
-    <div class="px-4 lg:px-6 py-2 flex items-center justify-between gap-3">
-      <div class="flex-1 overflow-x-auto no-scrollbar">
-        <div id="basin-tabs" class="flex gap-2 min-w-max"></div>
-      </div>
+  <div class="flex-none bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between gap-4 z-10">
+    <!-- Desktop Tabs -->
+    <div id="basin-tabs" class="hidden lg:flex gap-2 min-w-max overflow-x-auto custom-scroll">
+      <!-- Basin tabs will be populated by JS -->
+    </div>
+    <!-- Mobile Dropdown -->
+    <div class="lg:hidden flex-1">
+        <select id="basin-select" class="w-full border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition px-2 py-1.5 bg-white"></select>
+    </div>
+    <div id="live-status" class="flex-none flex items-center gap-2 text-xs text-slate-600 whitespace-nowrap">
+      <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+      <span id="live-time">Đang tải...</span>
     </div>
   </div>
 
-  <!-- Main Content -->
   <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-    <!-- Map Panel -->
-    <section class="flex-1 flex flex-col overflow-hidden bg-white border-b lg:border-b-0 lg:border-r border-slate-200">
-      <div class="flex-1 flex flex-col">
-        <div id="map-container" class="flex-1">
-          <div id="map"></div>
-        </div>
-        <div class="p-3 border-t border-slate-200 text-xs text-slate-500 flex flex-wrap gap-2">
-          <span>• Đường màu đậm: sông chính (Level 0–1)</span>
-          <span>• Hình chữ nhật xanh: Hồ</span>
-          <span>• Vòng tròn đỏ/cam: Trạm sông (theo mức cảnh báo)</span>
-        </div>
+    
+    <div class="flex-1 relative z-0">
+      <div id="map" class="w-full h-full"></div>
+      <div class="absolute bottom-2 left-2 bg-white/80 backdrop-blur-sm p-1 lg:p-1.5 rounded text-[8px] lg:text-[10px] text-slate-700 shadow-md z-[400]">
+        <span>Dữ liệu: Viện Khoa học Thuỷ lợi & Hệ thống giám sát thiên tai Việt Nam</span>
+        <span class="block sm:inline">• Bản đồ nền: Google Satellite</span>
       </div>
-    </section>
+    </div>
 
-    <!-- Sidebar: All Charts with Collapsible Sections -->
-    <aside class="w-full lg:w-96 flex-shrink-0 bg-white flex flex-col overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-200">
-        <div>
-          <h2 class="text-sm font-semibold text-slate-900">
-            Biểu đồ trạm theo thời gian
-          </h2>
-          <p class="text-[11px] text-slate-500 mt-1" id="sidebar-subtitle">
-            Chọn lưu vực và trạm để xem biểu đồ chi tiết.
-          </p>
-        </div>
+    <aside class="hidden lg:flex w-full lg:w-96 bg-white border-l border-slate-200 flex-col z-10 shadow-xl">
+      <div class="p-3 border-b bg-slate-50">
+        <h2 class="text-sm font-bold text-slate-800" id="sidebar-title">Chi tiết trạm</h2>
+        <p class="text-xs text-slate-500">Mở các mục bên dưới để xem thông tin & biểu đồ</p>
       </div>
-      
-      <!-- Scrollable content area -->
-      <div class="flex-1 overflow-y-auto scrollbar-thin">
-        <!-- Lake Stations Section -->
-        <div class="border-b border-slate-200">
-          <button 
-            id="lake-section-toggle"
-            class="w-full px-4 py-3 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors"
-            onclick="toggleSection('lake')"
-          >
-            <div class="flex items-center gap-2">
-              <svg class="w-5 h-5 text-emerald-600 transition-transform duration-200" id="lake-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-              <h3 class="text-sm font-semibold text-emerald-700">Hồ chứa (Lake)</h3>
-            </div>
-            <span id="lake-count" class="text-xs text-slate-500 bg-emerald-50 px-2 py-1 rounded-full">0</span>
+
+      <div class="flex-1 overflow-y-auto custom-scroll p-2 space-y-2">
+        
+        <div class="border rounded-lg overflow-hidden bg-white">
+          <button onclick="UI.toggleSection('summary')" class="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition">
+            <span class="font-semibold text-sm text-slate-700 flex items-center gap-2">
+              <span id="summary-chevron" class="transform -rotate-90 transition-transform duration-200">▼</span> Tổng quan
+            </span>
           </button>
-          <div id="lake-section-content" class="overflow-hidden transition-all duration-200">
-            <div class="p-3 space-y-2" id="lake-charts-container">
-              <div class="text-xs text-slate-500 text-center py-4">
-                Chọn lưu vực để xem danh sách hồ chứa.
-              </div>
+          <div id="summary-content" class="accordion-content bg-slate-50">
+            <div id="summary-container" class="p-3 space-y-4 text-xs">
+              <!-- Summary content will be populated by JS -->
             </div>
           </div>
         </div>
 
-        <!-- River Stations Section -->
-        <div class="border-b border-slate-200">
-          <button 
-            id="river-section-toggle"
-            class="w-full px-4 py-3 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors"
-            onclick="toggleSection('river')"
-          >
-            <div class="flex items-center gap-2">
-              <svg class="w-5 h-5 text-red-600 transition-transform duration-200" id="river-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-              <h3 class="text-sm font-semibold text-red-700">Trạm sông (River)</h3>
-            </div>
-            <span id="river-count" class="text-xs text-slate-500 bg-red-50 px-2 py-1 rounded-full">0</span>
+        <div class="border rounded-lg overflow-hidden bg-white">
+          <button onclick="UI.toggleSection('lake')" class="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition">
+            <span class="font-semibold text-sm text-emerald-700 flex items-center gap-2">
+              <span id="lake-chevron" class="transform -rotate-90 transition-transform duration-200">▼</span> Hồ chứa
+            </span>
+            <span id="lake-count" class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">0</span>
           </button>
-          <div id="river-section-content" class="overflow-hidden transition-all duration-200">
-            <div class="p-3 space-y-2" id="river-charts-container">
-              <div class="text-xs text-slate-500 text-center py-4">
-                Chọn lưu vực để xem danh sách trạm sông.
-              </div>
-            </div>
+          <div id="lake-content" class="accordion-content bg-slate-50">
+            <div id="lake-container" class="p-2 space-y-3"></div>
           </div>
         </div>
+
+        <div class="border rounded-lg overflow-hidden bg-white">
+          <button onclick="UI.toggleSection('river')" class="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition">
+            <span class="font-semibold text-sm text-blue-700 flex items-center gap-2">
+              <span id="river-chevron" class="transform -rotate-90 transition-transform duration-200">▼</span> Trạm sông
+            </span>
+            <span id="river-count" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">0</span>
+          </button>
+          <div id="river-content" class="accordion-content bg-slate-50">
+            <div id="river-container" class="p-2 space-y-3"></div>
+          </div>
+        </div>
+
       </div>
     </aside>
   </main>
-</div>
 
-<script>
-  // ----------------------
-  // GLOBAL STATE
-  // ----------------------
-  let map;
-  let riverLayerGroup;
-  let stationLayerGroup;
-  let allRiversGeoJSON = null;
-  let allRecords = [];
-  let basins = [];
-  let activeBasin = null;
-  let stationMarkersByCode = {};
-  let stationCards = { lake: {}, river: {} };
+  <!-- Mobile Detail View -->
+  <div id="detail-view" class="absolute inset-0 bg-white z-[1000] flex flex-col p-2 hidden transition-opacity duration-300 opacity-0">
+    <div class="flex-none flex justify-between items-center mb-2 p-2">
+      <div>
+        <h3 id="detail-title" class="font-bold text-lg text-slate-800"></h3>
+        <p id="detail-subtitle" class="text-sm text-slate-500"></p>
+      </div>
+      <button onclick="App.hideDetailView()" class="text-slate-400 hover:bg-slate-100 rounded-full p-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    <div id="detail-chart-container" class="flex-1 relative p-2"></div>
+  </div>
 
-  let chartInstances = {};
-
-  const COL = {
-    TYPE: 'type',
-    CODE: 'Mã trạm/LakeCode',
-    NAME: 'Trạm/Hồ',
-    BASIN: 'Tên sông/Lưu vực',
-    PROVINCE: 'Tên tỉnh',
-    TIME: 'Thời gian (UTC)',
-    WATER_LEVEL: 'Mực nước (m)',
-    TREND: 'Cảnh báo/Xu thế',
-    ALERT_VALUE: 'Cảnh báo value (0-4)',
-    ALERT_DELTA: 'Chênh lệch cảnh báo (m)',
-    BD1: 'BĐ1 (m)',
-    BD2: 'BĐ2 (m)',
-    BD3: 'BĐ3 (m)',
-    HIST_LEVEL: 'Mực nước lịch sử (m)',
-    HIST_YEAR: 'Năm lũ lịch sử',
-    X: 'x',
-    Y: 'y',
-    STORAGE: 'Dung tích (m3)',
-    STORAGE_TK: 'Dung tích TK (m3)',
-    STORAGE_RATIO: 'Tỷ lệ dung tích (%)',
-    Q_IN: 'Q đến (m3/s)',
-    Q_OUT: 'Q xả (m3/s)',
-    CODE_ALERT: 'Mã Cảnh báo',
-    PROVINCE_CODE: 'province_code',
-    BASIN_CODE: 'basin_code'
+  <script>
+  /**
+   * CONFIGURATION
+   */
+  const CONFIG = {
+    URLS: {
+      RIVER_GEO: 'river.json',
+      BOUNDARY: 'ProvincialBoundary.json',
+      DATA_CSV: 'https://raw.githubusercontent.com/lqtue/RiverTrackingAutomate/main/data/water_data_full_combined.csv'
+    },
+    COLORS: ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ec4899', '#0ea5e9', '#f59e0b', '#10b981'],
+    LIMITS: { LAKES: 50, RIVERS: 50 }, // FIX: Increased limit so you see more stations
+    DOWNSAMPLE: 240 
   };
 
-  const statusBadgeEl = document.getElementById('status-badge');
-  const basinTabsEl = document.getElementById('basin-tabs');
-  const sidebarSubtitleEl = document.getElementById('sidebar-subtitle');
-  const lakeChartsContainer = document.getElementById('lake-charts-container');
-  const riverChartsContainer = document.getElementById('river-charts-container');
+  const State = {
+    allRecords: [], latestRecords: [], basins: [],
+    activeBasin: '__ALL__', maxAlerts: {}, geoJSON: null,
+    provinces: [], sections: { summary: false, lake: false, river: false },
+    chartInstances: [], stationHistory: {}
+  };
 
-  // ----------------------
-  // INIT
-  // ----------------------
-  document.addEventListener('DOMContentLoaded', async () => {
-    initMap();
-    await loadData();
-  });
+  /**
+   * MODULE: DATA
+   */
+  const Data = {
+    async init() {
+      try {
+        const [geo, csv, boundary] = await Promise.all([
+          fetch(CONFIG.URLS.RIVER_GEO).then(r => r.json()),
+          fetch(CONFIG.URLS.DATA_CSV).then(r => r.text()),
+          fetch(CONFIG.URLS.BOUNDARY).then(r => r.json()).catch(() => null)
+        ]);
+        
+        State.geoJSON = geo;
+        State.provinces = boundary ? boundary.features : [];
+        if(boundary) MapManager.addBoundary(boundary);
+        this.processCSV(csv);
+        this.analyzeBasins();
+        UI.initTabs();
+        // UI.updateStatus(); // This is now redundant
+        UI.updateLiveTime();
+        App.switchBasin('__ALL__');
+      } catch (e) { console.error(e); }
+    },
 
-  function initMap() {
-    map = L.map('map', {
-      center: [15.5, 108],
-      zoom: 7,
-      zoomControl: true,
-      attributionControl: false
-    });
-
-    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-      maxZoom: 20
-    }).addTo(map);
-
-    riverLayerGroup = L.layerGroup().addTo(map);
-    stationLayerGroup = L.layerGroup().addTo(map);
-  }
-
-  // ----------------------
-  // DATA LOADING
-  // ----------------------
-  async function loadData() {
-    try {
-      statusBadgeEl.textContent = 'Đang tải river.geojson & data.csv...';
-
-      const [geoRes, csvRes] = await Promise.all([
-        fetch('river.geojson'),
-        fetch('data.csv')
-      ]);
-
-      if (!geoRes.ok) throw new Error('Không tải được river.geojson');
-      if (!csvRes.ok) throw new Error('Không tải được data.csv');
-
-      allRiversGeoJSON = await geoRes.json();
-      const csvText = await csvRes.text();
-      allRecords = parseCSV(csvText);
-
-      if (!allRecords.length) {
-        throw new Error('data.csv không có dòng dữ liệu hợp lệ');
+    processCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length < 2) return;
+      const headers = this.parseCSVLine(lines[0]).map(h => h.trim());
+      const data = [];
+      for(let i=1; i<lines.length; i++) {
+        if(!lines[i].trim()) continue;
+        const vals = this.parseCSVLine(lines[i]);
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = vals[idx]?.trim());
+        data.push(this.transformRecord(obj));
       }
-
-      preprocessRecords();
-      extractBasins();
-      renderBasinTabs();
-
-      if (basins.length) {
-        setActiveBasin(basins[0]);
-      }
-
-      const latestTime = getLatestTime(allRecords);
-      statusBadgeEl.textContent =
-        `Có ${allRecords.length} bản ghi | Cập nhật gần nhất: ${latestTime || 'N/A'}`;
-    } catch (err) {
-      console.error(err);
-      statusBadgeEl.textContent = 'Lỗi tải dữ liệu: ' + err.message;
-      statusBadgeEl.classList.add('text-red-600');
-    }
-  }
-
-  function parseCSV(text) {
-    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-    if (!lines.length) return [];
-    const headers = splitCSVLine(lines[0]);
-    const data = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      const values = splitCSVLine(line);
-      const row = {};
-      headers.forEach((h, idx) => {
-        row[h.trim()] = (values[idx] ?? '').trim();
-      });
-      data.push(row);
-    }
-    return data;
-  }
-
-  function splitCSVLine(line) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
+      data.sort((a,b) => a.ts - b.ts);
+      State.allRecords = data;
+      
+      const latestMap = {};
+      data.forEach(r => { if(r.code) latestMap[r.code] = r; });
+      State.latestRecords = Object.values(latestMap);
+      
+      State.latestRecords.forEach(r => {
+        if(r.type === 'river') {
+          const currentMax = State.maxAlerts[r.basin] || 0;
+          if(r.alert > currentMax) State.maxAlerts[r.basin] = r.alert;
         }
-      } else if (ch === ',' && !inQuotes) {
-        result.push(current);
-        current = '';
-      } else {
-        current += ch;
-      }
-    }
-    result.push(current);
-    return result;
-  }
-
-  function preprocessRecords() {
-    allRecords.forEach(r => {
-      r._type = (r[COL.TYPE] || '').trim();
-      r._code = (r[COL.CODE] || '').trim();
-      r._name = (r[COL.NAME] || '').trim();
-      r._basin = (r[COL.BASIN] || '').trim();
-      r._province = (r[COL.PROVINCE] || '').trim();
-      r._timeStr = (r[COL.TIME] || '').trim();
-      r._water = toNumber(r[COL.WATER_LEVEL]);
-      r._alertValue = toNumber(r[COL.ALERT_VALUE]);
-      r._alertDelta = toNumber(r[COL.ALERT_DELTA]);
-      r._storageRatio = toNumber(r[COL.STORAGE_RATIO]);
-      r._storage = toNumber(r[COL.STORAGE]);
-      r._storageTk = toNumber(r[COL.STORAGE_TK]);
-      r._qIn = toNumber(r[COL.Q_IN]);
-      r._qOut = toNumber(r[COL.Q_OUT]);
-      r._bd1 = toNumber(r[COL.BD1]);
-      r._bd2 = toNumber(r[COL.BD2]);
-      r._bd3 = toNumber(r[COL.BD3]);
-      r._bd4 = toNumber(r['BĐ4 (m)'] ?? r['BĐ4'] ?? null);
-
-      r._x = toNumber(r[COL.X]);
-      r._y = toNumber(r[COL.Y]);
-      r._timestamp = Date.parse(r._timeStr) || null;
-    });
-  }
-
-  function toNumber(val) {
-    if (val === null || val === undefined) return null;
-    if (typeof val === 'number') return isNaN(val) ? null : val;
-    const num = parseFloat(String(val).replace(',', '.'));
-    return isNaN(num) ? null : num;
-  }
-
-  function extractBasins() {
-    const set = new Set();
-    allRecords.forEach(r => {
-      if (r._basin) set.add(r._basin);
-    });
-    if (!set.size && allRiversGeoJSON && allRiversGeoJSON.features) {
-      allRiversGeoJSON.features.forEach(f => {
-        const b = f.properties && (f.properties.Basin || f.properties.basin);
-        if (b) set.add(String(b));
       });
-    }
-    basins = Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
-  }
+    },
 
-  function renderBasinTabs() {
-    basinTabsEl.innerHTML = '';
-    basins.forEach(basin => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'tab-btn-basins';
-      btn.textContent = basin;
-      btn.dataset.basin = basin;
-      btn.addEventListener('click', () => setActiveBasin(basin));
-      basinTabsEl.appendChild(btn);
-    });
-  }
-
-  function setActiveBasin(basinName) {
-    activeBasin = basinName;
-
-    document.querySelectorAll('.tab-btn-basins').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.basin === basinName);
-    });
-
-    sidebarSubtitleEl.textContent = `Lưu vực: ${basinName}`;
-
-    updateMapForBasin(basinName);
-    renderAllCharts(basinName);
-  }
-
-  // ----------------------
-  // MAP RENDERING
-  // ----------------------
-  function updateMapForBasin(basinName) {
-    riverLayerGroup.clearLayers();
-    stationLayerGroup.clearLayers();
-    stationMarkersByCode = {};
-
-    const riverFeatures = getRiverFeaturesForBasin(basinName);
-    const stationRecords = allRecords.filter(r => r._basin === basinName);
-
-    let bounds = null;
-
-    if (riverFeatures.length) {
-      const riverLayer = L.geoJSON(riverFeatures, {
-        style: feature => styleRiver(feature)
-      }).addTo(riverLayerGroup);
-      bounds = riverLayer.getBounds();
-    }
-
-    stationRecords.forEach(r => {
-      if (r._y == null || r._x == null) return;
-
-      const marker = createStationMarker(r).addTo(stationLayerGroup);
-      stationMarkersByCode[r._code] = marker;
-
-      const latlng = [r._y, r._x];
-      if (!bounds) {
-        bounds = L.latLngBounds(latlng, latlng);
-      } else {
-        bounds.extend(latlng);
+    parseCSVLine(text) {
+      const res = []; let cur = '', inQ = false;
+      for(let i=0; i<text.length; i++) {
+        const c = text[i];
+        if(c === '"') inQ = !inQ;
+        else if(c === ',' && !inQ) { res.push(cur); cur = ''; }
+        else cur += c;
       }
-    });
+      res.push(cur);
+      return res;
+    },
 
-    if (bounds && bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [24, 24] });
-    } else {
-      map.setView([15.5, 108], 7);
-    }
-  }
+    transformRecord(r) {
+      const num = (v) => v && v !== '' ? parseFloat(v.replace(',', '.')) : null;
+      return {
+        code: r['Mã trạm/LakeCode'], name: r['Trạm/Hồ'], basin: r['Tên sông/Lưu vực'], alertTrend: r['Cảnh báo/Xu thế'], province: r['Tên tỉnh'] || '',
+        type: (r['type'] || 'river').toLowerCase(), timeStr: r['Thời gian (UTC)'],
+        ts: Date.parse(r['Thời gian (UTC)'] + 'Z') || 0, // Append 'Z' to ensure UTC parsing
+        water: num(r['Mực nước (m)']), alert: num(r['Cảnh báo value (0-4)']) || 0,
+        storage: num(r['Dung tích (m3)']), percent: num(r['Tỷ lệ dung tích (%)']), // storage is in millions, so we'll format it later
+        qIn: num(r['Q đến (m3/s)']), qOut: num(r['Q xả (m3/s)']),
+        bd1: num(r['BĐ1 (m)']), bd2: num(r['BĐ2 (m)']), bd3: num(r['BĐ3 (m)']),
+        lat: num(r['y']), lng: num(r['x'])
+      };
+    },
 
-  function getRiverFeaturesForBasin(basinName) {
-    if (!allRiversGeoJSON || !allRiversGeoJSON.features) return [];
-    return allRiversGeoJSON.features.filter(f => {
-      const props = f.properties || {};
-      const basinProp = props.Basin || props.basin || '';
-      return String(basinProp).trim() === basinName;
-    });
-  }
+    analyzeBasins() {
+      const s = new Set(State.latestRecords.map(r => r.basin).filter(Boolean));
+      State.basins = Array.from(s).sort();
+    },
 
-  function styleRiver(feature) {
-    const props = feature.properties || {};
-    const level = typeof props.Level === 'number' ? props.Level : toNumber(props.Level);
-    let weight = 2;
-    let color = '#60a5fa';
-    let opacity = 0.8;
+    getRecordsForBasin(basin, onlyLatest=false) {
+      const src = onlyLatest ? State.latestRecords : State.allRecords;
+      return basin === '__ALL__' ? src : src.filter(r => r.basin === basin);
+    },
 
-    if (level === 0) {
-      weight = 4;
-      color = '#1d4ed8';
-    } else if (level === 1) {
-      weight = 3;
-      color = '#2563eb';
-    } else if (level === 2) {
-      weight = 2;
-      color = '#3b82f6';
-    } else if (level === 3) {
-      weight = 1.5;
-      color = '#93c5fd';
-      opacity = 0.7;
-    }
-
-    return {
-      color,
-      weight,
-      opacity
-    };
-  }
-
-  function createStationMarker(rec) {
-    const isLake = rec._type.toLowerCase() === 'lake';
-    const latlng = [rec._y, rec._x];
-
-    let fillColor = '#22c55e';
-    let color = '#0f766e';
-
-    if (!isLake) {
-      const alertValue = rec._alertValue ?? 0;
-      if (alertValue >= 3) {
-        fillColor = '#ef4444';
-        color = '#991b1b';
-      } else if (alertValue >= 1) {
-        fillColor = '#f97316';
-        color = '#9a3412';
-      } else {
-        fillColor = '#3b82f6';
-        color = '#1d4ed8';
+    downsample(dataArray, key) {
+      if (dataArray.length <= CONFIG.DOWNSAMPLE) return dataArray.map(d => d[key]);
+      const step = Math.ceil(dataArray.length / CONFIG.DOWNSAMPLE);
+      const filtered = dataArray.filter((_, i) => i % step === 0);
+      if (dataArray.length > 0 && filtered[filtered.length-1] !== dataArray[dataArray.length-1]) {
+          filtered.push(dataArray[dataArray.length-1]);
       }
-    } else {
-      const ratio = rec._storageRatio;
-      if (ratio != null) {
-        if (ratio < 60) {
-          fillColor = '#60a5fa';
-          color = '#1d4ed8';
-        } else if (ratio < 90) {
-          fillColor = '#22c55e';
-          color = '#15803d';
-        } else {
-          fillColor = '#eab308';
-          color = '#92400e';
-        }
-      }
+      return filtered.map(d => d[key]);
     }
+  };
 
-    let marker;
+  /**
+   * MODULE: MAP MANAGER
+   */
+  const MapManager = {
+    instance: null, layers: { river: null, station: null },
 
-    if (isLake) {
-      const size = getLakeMarkerSize(rec);
-      const icon = L.divIcon({
-        className: 'lake-rect-icon',
-        html: `<div style="
-          width:${size}px;
-          height:${size * 0.6}px;
-          border:2px solid ${color};
-          background:${fillColor};
-          opacity:0.9;
-        "></div>`,
-        iconSize: [size, size * 0.6],
-        iconAnchor: [size / 2, (size * 0.6) / 2]
+    init() {
+      this.instance = L.map('map', { 
+        center: [16, 108], zoom: 6, preferCanvas: true, zoomControl: false, attributionControl: false
       });
-      marker = L.marker(latlng, { icon });
-    } else {
-      marker = L.circleMarker(latlng, {
-        radius: 6,
-        color,
-        weight: 1,
-        fillColor,
-        fillOpacity: 0.9
-      });
-    }
+      L.control.zoom({ position: 'topright' }).addTo(this.instance);
+      
+      // FIX: Optimized tile loading for smoother "cache" feel
+      L.tileLayer('https://mt0.google.com/vt/lyrs=s&hl=vi&x={x}&y={y}&z={z}', {
+        keepBuffer: 10,       // FIX: Keep more tiles in memory
+        updateWhenIdle: false // FIX: Load tiles while panning
+      }).addTo(this.instance);
+      
+      this.layers.river = L.layerGroup().addTo(this.instance);
+      this.layers.station = L.layerGroup().addTo(this.instance);
+    },
 
-    marker.bindPopup('<div class="text-[11px] text-slate-500">Đang tải biểu đồ...</div>', {
-      maxWidth: 260,
-      className: 'station-popup'
-    });
+    addBoundary(data) {
+      L.geoJSON(data, { 
+        style: { color: '#ffffff', weight: 1, opacity: 0.6, fillOpacity: 0 }, 
+        interactive: false 
+      }).addTo(this.instance);
+    },
 
-    marker.on('popupopen', e => {
-      e.popup.setContent(buildPopupContent(rec));
-    });
+    renderBasin(basinName) {
+      this.layers.river.clearLayers();
+      this.layers.station.clearLayers();
+      const records = Data.getRecordsForBasin(basinName, true);
+      const activeBasins = new Set(records.map(r => r.basin));
 
-    marker.on('click', () => {
-      scrollToStationChart(rec._code);
-    });
-
-    return marker;
-  }
-
-  function getLakeMarkerSize(rec) {
-    const design = rec._storageTk;
-    if (design && design > 0) {
-      const log = Math.log10(design);
-      const scaled = (log - 4) * 4;
-      return Math.max(12, Math.min(40, 12 + scaled));
-    }
-    return 12;
-  }
-
-  function buildPopupContent(rec) {
-    const chartCard = getStationCardClone(rec);
-    if (chartCard) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'popup-card-wrapper';
-      wrapper.style.width = '360px';
-      chartCard.style.width = '100%';
-      chartCard.style.maxWidth = '100%';
-      // let height be defined by chart content (no internal scroll)
-      wrapper.appendChild(chartCard);
-      return wrapper;
-    }
-    const fallback = document.createElement('div');
-    fallback.className = 'text-[11px] text-slate-500';
-    fallback.textContent = 'Chưa có biểu đồ để hiển thị.';
-    return fallback;
-  }
-
-  function getStationCardClone(rec) {
-    if (!rec || !rec._code) return null;
-    const typeKey = rec._type && rec._type.toLowerCase() === 'lake' ? 'lake' : 'river';
-    const card = stationCards[typeKey] && stationCards[typeKey][rec._code];
-    if (!card) return null;
-    return cloneElementWithCanvas(card);
-  }
-
-  function cloneElementWithCanvas(source) {
-    const clone = source.cloneNode(true);
-    const sourceCanvases = source.querySelectorAll('canvas');
-    const cloneCanvases = clone.querySelectorAll('canvas');
-    sourceCanvases.forEach((canvas, idx) => {
-      const cloneCanvas = cloneCanvases[idx];
-      if (!cloneCanvas) return;
-      const ctx = cloneCanvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(canvas, 0, 0);
-      }
-      cloneCanvas.removeAttribute('id');
-    });
-    return clone;
-  }
-
-  // ----------------------
-  // RENDER ALL CHARTS
-  // ----------------------
-  function renderAllCharts(basinName) {
-    Object.values(chartInstances).forEach(chart => {
-      if (chart) chart.destroy();
-    });
-    chartInstances = {};
-    stationCards = { lake: {}, river: {} };
-
-    const records = allRecords.filter(r => r._basin === basinName);
-    const lakes = records.filter(r => r._type.toLowerCase() === 'lake');
-    const rivers = records.filter(r => r._type.toLowerCase() === 'river');
-
-    document.getElementById('lake-count').textContent = countUniqueStations(lakes);
-    document.getElementById('river-count').textContent = countUniqueStations(rivers);
-
-    renderLakeCharts(lakes);
-    renderRiverCharts(rivers);
-
-    setTimeout(() => {
-      if (window.lakeSectionOpen) {
-        const lakeContent = document.getElementById('lake-section-content');
-        lakeContent.style.maxHeight = lakeContent.scrollHeight + 'px';
-      }
-      if (window.riverSectionOpen) {
-        const riverContent = document.getElementById('river-section-content');
-        riverContent.style.maxHeight = riverContent.scrollHeight + 'px';
-      }
-    }, 100);
-  }
-
-  function renderLakeCharts(lakeRecords) {
-    lakeChartsContainer.innerHTML = '';
-
-    if (!lakeRecords.length) {
-      lakeChartsContainer.innerHTML = `
-        <div class="text-xs text-slate-500 text-center py-4">
-          Không có hồ chứa trong lưu vực này.
-        </div>
-      `;
-      return;
-    }
-
-    const byCode = {};
-    lakeRecords.forEach(r => {
-      if (!r._code) return;
-      if (!byCode[r._code]) byCode[r._code] = [];
-      byCode[r._code].push(r);
-    });
-
-    Object.entries(byCode).forEach(([code, records]) => {
-      records.sort((a, b) => (a._timestamp || 0) - (b._timestamp || 0));
-      const latest = records[records.length - 1];
-
-      const card = document.createElement('div');
-      card.className = 'border border-slate-200 rounded-lg bg-white hover:shadow-sm transition';
-      card.innerHTML = `
-        <div class="p-3 border-b border-slate-200">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="font-semibold text-slate-900 text-sm truncate">
-                ${escapeHtml(latest._name)}
-              </div>
-              <div class="text-[11px] text-slate-500 mt-0.5">
-                ${escapeHtml(latest._province || '')}
-              </div>
-            </div>
-            <span class="station-pill bg-emerald-50 text-emerald-700">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              Lake
-            </span>
-          </div>
-          <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <span class="text-slate-500">Mực nước:</span>
-              <span class="font-semibold text-slate-900 ml-1">
-                ${latest._water != null ? latest._water.toFixed(2) + ' m' : 'N/A'}
-              </span>
-            </div>
-            <div>
-              <span class="text-slate-500">Dung tích:</span>
-              <span class="font-semibold text-slate-900 ml-1">
-                ${latest._storageRatio != null ? latest._storageRatio.toFixed(0) + '%' : 'N/A'}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div class="p-3">
-          <div class="grid grid-cols-1 gap-3">
-            <div>
-              <canvas id="lake-vol-${code}" class="w-full" style="height: 180px;"></canvas>
-            </div>
-            <div>
-              <canvas id="lake-flow-${code}" class="w-full" style="height: 180px;"></canvas>
-            </div>
-          </div>
-        </div>
-      `;
-
-      lakeChartsContainer.appendChild(card);
-      if (!stationCards.lake) stationCards.lake = {};
-      stationCards.lake[code] = card;
-
-      setTimeout(() => {
-        createLakeVolumeChart(code, records, latest);
-        createLakeFlowChart(code, records, latest);
-      }, 50);
-    });
-  }
-
-  function renderRiverCharts(riverRecords) {
-    riverChartsContainer.innerHTML = '';
-
-    if (!riverRecords.length) {
-      riverChartsContainer.innerHTML = `
-        <div class="text-xs text-slate-500 text-center py-4">
-          Không có trạm sông trong lưu vực này.
-        </div>
-      `;
-      return;
-    }
-
-    const byCode = {};
-    riverRecords.forEach(r => {
-      if (!r._code) return;
-      if (!byCode[r._code]) byCode[r._code] = [];
-      byCode[r._code].push(r);
-    });
-
-    Object.entries(byCode).forEach(([code, records]) => {
-      records.sort((a, b) => (a._timestamp || 0) - (b._timestamp || 0));
-      const latest = records[records.length - 1];
-
-      const alertValue = latest._alertValue ?? 0;
-      let alertBadgeClass = 'bg-blue-50 text-blue-700';
-      if (alertValue >= 3) {
-        alertBadgeClass = 'bg-red-50 text-red-700';
-      } else if (alertValue >= 1) {
-        alertBadgeClass = 'bg-orange-50 text-orange-700';
-      }
-
-      const card = document.createElement('div');
-      card.className = 'border border-slate-200 rounded-lg bg-white hover:shadow-sm transition';
-      card.innerHTML = `
-        <div class="p-3 border-b border-slate-200">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="font-semibold text-slate-900 text-sm truncate">
-                ${escapeHtml(latest._name)}
-              </div>
-              <div class="text-[11px] text-slate-500 mt-0.5">
-                ${escapeHtml(latest._province || '')}
-              </div>
-            </div>
-            <span class="station-pill ${alertBadgeClass}">
-              <span class="w-2 h-2 rounded-full ${alertValue >= 3 ? 'bg-red-500' : alertValue >= 1 ? 'bg-orange-500' : 'bg-blue-500'}"></span>
-              River
-            </span>
-          </div>
-          <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <span class="text-slate-500">Mực nước:</span>
-              <span class="font-semibold text-slate-900 ml-1">
-                ${latest._water != null ? latest._water.toFixed(2) + ' m' : 'N/A'}
-              </span>
-            </div>
-            <div>
-              <span class="text-slate-500">Cảnh báo:</span>
-              <span class="font-semibold text-slate-900 ml-1">
-                Mức ${alertValue}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div class="p-3">
-          <canvas id="river-${code}" class="w-full" style="height: 200px;"></canvas>
-        </div>
-      `;
-
-      riverChartsContainer.appendChild(card);
-      if (!stationCards.river) stationCards.river = {};
-      stationCards.river[code] = card;
-
-      setTimeout(() => {
-        createRiverChart(code, records, latest);
-      }, 50);
-    });
-  }
-
-  function createLakeVolumeChart(code, records, latest) {
-    const ctx = document.getElementById(`lake-vol-${code}`);
-    if (!ctx) return;
-
-    const labels = records.map(r => formatTimeLabelUTC(r._timestamp, r._timeStr));
-    const volumeSeries = records.map(r => r._storage != null ? r._storage : null);
-    const percentSeries = records.map(r => r._storageRatio);
-
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Dung tích (triệu m³)',
-            data: volumeSeries,
-            borderColor: 'rgb(59, 130, 246)',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 2,
-            tension: 0.3,
-            pointRadius: 1.5,
-            spanGaps: true,
-            fill: true,
-            yAxisID: 'y'
-          },
-          {
-            label: 'Tỷ lệ (%)',
-            data: percentSeries,
-            borderColor: 'rgb(249, 115, 22)',
-            backgroundColor: 'rgba(249, 115, 22, 0.1)',
-            borderWidth: 2,
-            tension: 0.3,
-            pointRadius: 1.5,
-            spanGaps: true,
-            fill: true,
-            yAxisID: 'y1'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: { boxWidth: 10, font: { size: 10 }, padding: 8 }
-          },
-          title: {
-            display: true,
-            text: 'Dung tích & Tỷ lệ',
-            font: { size: 11, weight: 'bold' },
-            padding: { bottom: 8 }
-          },
-          tooltip: {
-            callbacks: {
-              label: c => {
-                const v = c.parsed.y;
-                if (c.datasetIndex === 0) {
-                  return `${c.dataset.label}: ${v != null ? v.toFixed(2) + ' triệu m³' : 'N/A'}`;
-                }
-                return `${c.dataset.label}: ${v != null ? v.toFixed(0) + '%' : 'N/A'}`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { maxRotation: 0, autoSkip: true, font: { size: 9 } }
-          },
-          y: {
-            title: { display: true, text: 'Triệu m³', font: { size: 10 } },
-            ticks: { font: { size: 9 } }
-          },
-          y1: {
-            position: 'right',
-            grid: { drawOnChartArea: false },
-            title: { display: true, text: '%', font: { size: 10 } },
-            ticks: { font: { size: 9 } },
-            min: 0
-          }
-        }
-      }
-    });
-
-    chartInstances[`lake-vol-${code}`] = chart;
-  }
-
-  function createLakeFlowChart(code, records, latest) {
-    const ctx = document.getElementById(`lake-flow-${code}`);
-    if (!ctx) return;
-
-    const labels = records.map(r => formatTimeLabelUTC(r._timestamp, r._timeStr));
-    const qInSeries = records.map(r => r._qIn);
-    const qOutSeries = records.map(r => r._qOut);
-
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Q đến (m³/s)',
-            data: qInSeries,
-            borderColor: 'rgb(34, 197, 94)',
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            borderWidth: 2,
-            tension: 0.3,
-            pointRadius: 1.5,
-            spanGaps: true,
-            fill: true
-          },
-          {
-            label: 'Q xả (m³/s)',
-            data: qOutSeries,
-            borderColor: 'rgb(239, 68, 68)',
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderWidth: 2,
-            tension: 0.3,
-            pointRadius: 1.5,
-            spanGaps: true,
-            fill: true
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: { boxWidth: 10, font: { size: 10 }, padding: 8 }
-          },
-          title: {
-            display: true,
-            text: 'Lưu lượng Q đến / Q xả',
-            font: { size: 11, weight: 'bold' },
-            padding: { bottom: 8 }
-          },
-          tooltip: {
-            callbacks: {
-              label: c => {
-                const v = c.parsed.y;
-                return `${c.dataset.label}: ${v != null ? v.toFixed(2) + ' m³/s' : 'N/A'}`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { maxRotation: 0, autoSkip: true, font: { size: 9 } }
-          },
-          y: {
-            title: { display: true, text: 'm³/s', font: { size: 10 } },
-            ticks: { font: { size: 9 } }
-          }
-        }
-      }
-    });
-
-    chartInstances[`lake-flow-${code}`] = chart;
-  }
-
-  function createRiverChart(code, records, latest) {
-    const ctx = document.getElementById(`river-${code}`);
-    if (!ctx) return;
-
-    const labels = records.map(r => formatTimeLabelUTC(r._timestamp, r._timeStr));
-    const waterSeries = records.map(r => r._water);
-
-    const ds = [
-      {
-        label: 'Mực nước (m)',
-        data: waterSeries,
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        borderWidth: 2,
-        tension: 0.3,
-        pointRadius: 1.5,
-        fill: true
-      }
-    ];
-
-    const thresholds = [
-      { value: latest._bd1, label: 'BĐ1', color: 'rgba(56, 189, 248, 0.9)' },
-      { value: latest._bd2, label: 'BĐ2', color: 'rgba(234, 179, 8, 0.9)' },
-      { value: latest._bd3, label: 'BĐ3', color: 'rgba(248, 113, 113, 0.9)' }
-    ];
-
-    thresholds.forEach(th => {
-      if (th.value != null && !isNaN(th.value)) {
-        ds.push({
-          label: th.label,
-          data: labels.map(() => th.value),
-          borderColor: th.color,
-          borderWidth: 1.2,
-          borderDash: [4, 4],
-          pointRadius: 0,
-          fill: false
+      if (State.geoJSON) {
+        const features = State.geoJSON.features.filter(f => {
+          const b = f.properties.Basin || f.properties.basin;
+          return basinName === '__ALL__' ? activeBasins.has(b) : b === basinName;
         });
-      }
-    });
-
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: ds },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: { boxWidth: 10, font: { size: 10 }, padding: 8 }
-          },
-          title: {
-            display: true,
-            text: 'Mực nước theo thời gian',
-            font: { size: 11, weight: 'bold' },
-            padding: { bottom: 8 }
-          },
-          tooltip: {
-            callbacks: {
-              label: c => {
-                const v = c.parsed.y;
-                return `${c.dataset.label}: ${v != null ? v.toFixed(2) + ' m' : 'N/A'}`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { maxRotation: 0, autoSkip: true, font: { size: 9 } }
-          },
-          y: {
-            title: { display: true, text: 'Mực nước (m)', font: { size: 10 } },
-            ticks: { font: { size: 9 } }
-          }
+        if (features.length) {
+          const riverLayer = L.geoJSON(features, { style: this.styleRiver });
+          this.layers.river.addLayer(riverLayer);
+          
+          // Zoom to the bounds of the visible rivers.
+          this.instance.flyToBounds(riverLayer.getBounds(), { padding: [20, 20], duration: 1.5 });
         }
       }
-    });
 
-    chartInstances[`river-${code}`] = chart;
-  }
+      records.forEach(r => {
+        if (!r.lat || !r.lng) return;
+        this.layers.station.addLayer(this.createMarker(r));
+      });
+    },
 
-  function scrollToStationChart(code) {
-    const lakeCard = document.querySelector(`#lake-charts-container canvas[id^="lake-vol-${code}"]`);
-    const riverCard = document.querySelector(`#river-charts-container canvas[id="river-${code}"]`);
-    
-    const targetCard = lakeCard ? lakeCard.closest('.border') : riverCard ? riverCard.closest('.border') : null;
-    
-    if (targetCard) {
-      targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      targetCard.classList.add('ring-2', 'ring-blue-400');
-      setTimeout(() => {
-        targetCard.classList.remove('ring-2', 'ring-blue-400');
-      }, 2000);
-    }
-  }
+    styleRiver(feature) {
+      const props = feature.properties;
+      const level = props.Level || 0; // Default to level 0 if not specified
 
-  // ----------------------
-  // UTIL
-  // ----------------------
-  function getLatestTime(records) {
-    let maxTs = null;
-    records.forEach(r => {
-      if (r._timestamp != null) {
-        if (maxTs == null || r._timestamp > maxTs) maxTs = r._timestamp;
+      let weight;
+      let opacity;
+
+      // Scale width and opacity based on the river's Level
+      // Level 0 is the largest, Level 3 is the smallest.
+      switch (level) {
+        case 0: weight = 3.5; opacity = 1; break; // Main river
+        case 1: weight = 1.5; opacity = 0.8; break; // Major branch
+        case 2: weight = 1; opacity = 0.7; break; // Sub-branch
+        case 3: weight = 0.5; opacity = 0.6; break; // Smallest tributary
+        default: weight = 0.5; opacity = 0.6;
       }
-    });
-    if (!maxTs) return null;
-    const d = new Date(maxTs);
-    return d.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    }) + ' (UTC)';
-  }
 
-  function formatTimeLabelUTC(ts, fallbackStr) {
-    if (!ts) return fallbackStr || '';
-    const d = new Date(ts);
-    return d.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
+      return { 
+        color: '#60a5fa', 
+        weight: weight, 
+        opacity: opacity 
+      };
+    },
 
-  function escapeHtml(str) {
-    if (str == null) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
+    createMarker(r) {
+      const isLake = r.type === 'lake';
+      const color = isLake ? null : this.getAlertColor(r.alert);
+      const lakeColor = isLake ? this.getLakeColor(r.percent) : null;
+      const basinColor = this.getBasinColor(r.basin);
+      let marker;
+      if (isLake) {
+        const html = `<svg width="24" height="24" viewBox="0 0 24 24" fill="${lakeColor}" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg>`;
+        marker = L.marker([r.lat, r.lng], { icon: L.divIcon({ className: 'lake-icon', html, iconSize: [24, 24] }) });
+      } else {
+        marker = L.circleMarker([r.lat, r.lng], { radius: r.alert > 0 ? 6 + (r.alert * 2) : 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 1 });
+      }
+      
+      const popupTitle = `<div class="font-bold text-white p-2 rounded-t-lg" style="background-color: ${isLake ? lakeColor : color};">
+        ${r.name} <span class="font-normal text-white/80 text-xs">- ${r.province}</span>
+      </div>`;
+      const riverInfo = `<div class="text-slate-500">Mực nước:</div><div class="font-mono font-bold">${r.water||'-'} m</div><div class="text-slate-500">Cảnh báo:</div><div class="font-bold" style="color:${color}">${r.alertTrend || `Mức ${r.alert}`}</div>`;
+      const lakeInfo = `<div class="text-slate-500">Dung tích:</div><div class="font-mono font-bold">${r.storage ? r.storage.toLocaleString('vi-VN') : '-'} triệu m³</div><div class="text-slate-500">Tỷ lệ đầy:</div><div class="font-mono font-bold" style="color:${lakeColor}">${r.percent||'-'}%</div>`;
+      
+      const date = new Date(r.ts);
+      const hours = date.getUTCHours();
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const year = date.getUTCFullYear();
+      const formattedTime = `Cập nhật: ${hours}h${minutes}, ngày ${day}/${month}/${year}`;
+      
+      const detailButton = `<div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
+        <button onclick="App.showDetailView('${r.code}')" class="w-full text-center bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold py-1.5 rounded">Xem chi tiết</button>
+      </div>`;
 
-  function countUniqueStations(records) {
-    const set = new Set();
-    records.forEach(r => {
-      if (r && r._code) set.add(r._code);
-    });
-    return set.size;
-  }
-</script>
+      const popupContent = `<div class="p-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs pt-1">${isLake ? lakeInfo : riverInfo}<div class="col-span-2 text-[10px] text-slate-400 mt-1 text-right">${formattedTime}</div>${detailButton}</div>`;
+      const popup = `<div class="font-sans text-sm min-w-[220px]">${popupTitle}${popupContent}</div>`;
+      marker.bindPopup(popup, { className: 'custom-popup' });
 
+      // FIX: Re-open popup after a short delay to ensure correct positioning after auto-pan.
+      // This avoids the "half-popup" issue on first click.
+      marker.on('click', (e) => {
+        const m = e.target;
+        m.openPopup(); // Open immediately to trigger Leaflet's auto-pan
+        setTimeout(() => { if (m.isPopupOpen()) { m.openPopup(); } }, 100); // Re-open to fix position
+        UI.scrollToChart(r.type, r.code);
+      });
+      return marker;
+    },
+
+    getAlertColor(val) {
+      if (val >= 3) return '#ef4444'; if (val >= 2) return '#f97316'; if (val >= 1) return '#eab308'; return '#0ea5e9';
+    },
+
+    getLakeColor(percent) {
+      if (percent == null) return '#0ea5e9'; // Default blue
+      if (percent > 100) return '#ef4444';  // Red
+      if (percent >= 95) return '#f97316';  // Orange
+      if (percent >= 90) return '#eab308';  // Yellow
+      return '#0ea5e9';                     // Blue
+    },
+
+    getBasinColor(basin) {
+      const alertLevel = State.maxAlerts[basin] || 0;
+      const colors = ['#60a5fa', '#facc15', '#fb923c', '#f87171', '#dc2626'];
+      return alertLevel > 0 
+        ? colors[alertLevel] 
+        : (CONFIG.COLORS[basin.length % CONFIG.COLORS.length]);
+    }
+  };
+
+  /**
+   * MODULE: UI
+   */
+  const UI = {
+    updateLiveTime() {
+      if (!State.latestRecords.length) return;
+      // Find the most recent record
+      const latest = State.latestRecords.reduce((a, b) => (a.ts > b.ts ? a : b));
+      const date = new Date(latest.ts);
+
+      const hours = date.getUTCHours();
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const year = date.getUTCFullYear();
+
+      const formattedTime = `Cập nhật: ${hours}h, ngày ${day}/${month}/${year}`;
+      document.getElementById('live-time').textContent = formattedTime;
+    },
+
+    initTabs() {
+      const tabsContainer = document.getElementById('basin-tabs');
+      const selectEl = document.getElementById('basin-select');
+
+      const createBtn = (txt, val) => {
+        const b = document.createElement('button');
+        b.className = 'tab-btn px-4 py-1 rounded-full bg-slate-100 text-slate-600 text-sm font-medium whitespace-nowrap hover:bg-slate-200';
+        b.textContent = txt;
+        b.onclick = () => App.switchBasin(val);
+        b.dataset.val = val;
+        tabsContainer.appendChild(b);
+      };
+
+      const createOption = (txt, val) => {
+        const o = document.createElement('option');
+        o.textContent = txt;
+        o.value = val;
+        selectEl.appendChild(o);
+      };
+
+      createBtn('Tất cả lưu vực', '__ALL__');
+      createOption('Tất cả lưu vực', '__ALL__');
+      State.basins.forEach(b => {
+        createBtn(b, b);
+        createOption(`Lưu vực sông ${b}`, b);
+      });
+      selectEl.onchange = (e) => App.switchBasin(e.target.value);
+    },
+
+    toggleSection(type) {
+      State.sections[type] = !State.sections[type];
+      const content = document.getElementById(`${type}-content`);
+      const chevron = document.getElementById(`${type}-chevron`);
+      
+      // FIX: Use JS to calculate height to allow infinite scrolling
+      if (State.sections[type]) {
+        // Set to scrollHeight (exact size of content)
+        content.style.maxHeight = content.scrollHeight + "px";
+        chevron.classList.remove('-rotate-90');
+        Charts.renderBatch(type);
+      } else {
+        content.style.maxHeight = '0px';
+        chevron.classList.add('-rotate-90');
+      }
+    },
+    
+    // FIX: Added function to recalculate height if content loads late
+    refreshHeight(type) {
+      const content = document.getElementById(`${type}-content`);
+      if (State.sections[type]) {
+        content.style.maxHeight = content.scrollHeight + "px";
+      }
+    },
+
+    resetSections() {
+      ['summary', 'lake', 'river'].forEach(type => {
+        if (State.sections[type]) {
+          State.sections[type] = false;
+          document.getElementById(`${type}-content`).style.maxHeight = '0px';
+          document.getElementById(`${type}-chevron`).classList.add('-rotate-90');
+        }
+      });
+    },
+
+    renderSummary() {
+      const container = document.getElementById('summary-container');
+      container.innerHTML = '';
+      const records = Data.getRecordsForBasin(State.activeBasin, true);
+
+      const basins = {};
+      records.forEach(r => {
+        if (!basins[r.basin]) {
+          basins[r.basin] = {
+            lakes: { red: 0, orange: 0, yellow: 0, blue: 0 },
+            rivers: { red: 0, orange: 0, yellow: 0, blue: 0 }
+          };
+        }
+        if (r.type === 'lake') {
+          const p = r.percent;
+          if (p > 100) basins[r.basin].lakes.red++;
+          else if (p >= 95) basins[r.basin].lakes.orange++;
+          else if (p >= 90) basins[r.basin].lakes.yellow++;
+          else basins[r.basin].lakes.blue++;
+        } else {
+          const a = r.alert;
+          if (a >= 3) basins[r.basin].rivers.red++;
+          else if (a >= 2) basins[r.basin].rivers.orange++;
+          else if (a >= 1) basins[r.basin].rivers.yellow++;
+          else basins[r.basin].rivers.blue++;
+        }
+      });
+
+      const sortedBasins = Object.keys(basins).sort();
+      if (sortedBasins.length === 0) {
+        container.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Không có dữ liệu</div>';
+        return;
+      }
+
+      sortedBasins.forEach(basinName => {
+        const data = basins[basinName];
+        const summaryItem = (type, color, label, count) => {
+          if (count === 0) return '';
+          const icon = type === 'lake' 
+            ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg>`
+            : `<div class="w-3 h-3 rounded-full" style="background-color:${color};"></div>`;
+          return `<div class="flex items-center gap-1.5"><div class="w-3 h-3 flex items-center justify-center">${icon}</div> ${label}: <span class="font-bold">${count}</span></div>`;
+        };
+
+        const basinHTML = `
+          <div class="pb-3 border-b last:border-b-0">
+            <h4 class="font-bold text-slate-700 mb-2">Sông ${basinName}</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="font-semibold text-emerald-700 mb-1">Hồ chứa</div>
+                ${summaryItem('lake', '#ef4444', '> 100%', data.lakes.red)} ${summaryItem('lake', '#f97316', '≥ 95%', data.lakes.orange)} ${summaryItem('lake', '#eab308', '≥ 90%', data.lakes.yellow)} ${summaryItem('lake', '#0ea5e9', '< 90%', data.lakes.blue)}
+              </div>
+              <div>
+                <div class="font-semibold text-blue-700 mb-1">Trạm sông</div>
+                ${summaryItem('river', '#ef4444', 'BĐ3+', data.rivers.red)} ${summaryItem('river', '#f97316', 'BĐ2', data.rivers.orange)} ${summaryItem('river', '#eab308', 'BĐ1', data.rivers.yellow)} ${summaryItem('river', '#0ea5e9', 'Bình thường', data.rivers.blue)}
+              </div>
+            </div>
+          </div>`;
+        container.insertAdjacentHTML('beforeend', basinHTML);
+      });
+    },
+
+    prepareChartContainers(type, records) {
+      const container = document.getElementById(`${type}-container`);
+      const countEl = document.getElementById(`${type}-count`);
+      
+      const groups = {};
+      records.forEach(r => { if(!groups[r.code]) groups[r.code] = []; groups[r.code].push(r); });
+      Object.assign(State.stationHistory, groups);
+
+      const sortedKeys = Object.keys(groups).sort((a, b) => {
+        const lastA = groups[a][groups[a].length-1];
+        const lastB = groups[b][groups[b].length-1];
+        if(type === 'lake') return (lastB.percent || 0) - (lastA.percent || 0);
+        return (lastB.alert || 0) - (lastA.alert || 0);
+      });
+
+      countEl.textContent = sortedKeys.length;
+      container.innerHTML = '';
+
+      const limit = type === 'lake' ? CONFIG.LIMITS.LAKES : CONFIG.LIMITS.RIVERS;
+      sortedKeys.slice(0, limit).forEach(code => {
+        const history = groups[code];
+        const latest = history[history.length - 1];
+        const alertLvl = latest.alert || 0; const percent = latest.percent || 0;
+        const html = `
+          <div class="border rounded bg-white p-2 shadow-sm" id="card-${code}">
+            <div class="flex justify-between items-start mb-2"><div>
+                <div class="font-bold text-xs text-slate-800">${latest.name}</div>
+                <div class="text-[10px] text-slate-500">${latest.basin} • ${latest.province || ''}</div>
+              </div>
+              <div class="text-xs font-mono font-bold ${alertLvl >= 2 ? 'text-red-600' : 'text-blue-600'}">${type === 'river' ? (latest.alertTrend || `Mức ${alertLvl}`) : `${percent}%`}</div>
+            </div>
+            <div class="h-32 w-full relative"><canvas id="chart-${code}" data-code="${code}"></canvas></div>
+            ${type === 'lake' ? `
+            <div class="h-32 w-full relative mt-2"><canvas id="chart-flow-${code}" data-code="${code}"></canvas></div>
+            ` : ''}
+          </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+      });
+
+      if(sortedKeys.length === 0) container.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Không có dữ liệu</div>';
+      
+      // FIX: Refresh height after inserting content so it doesn't cut off
+      this.refreshHeight(type);
+    },
+
+    scrollToChart(type, code) {
+      if (!State.sections[type]) this.toggleSection(type);
+      setTimeout(() => {
+        // Re-calc height in case the open animation hadn't accounted for this section yet
+        this.refreshHeight(type);
+        const card = document.getElementById(`card-${code}`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.classList.add('ring-2', 'ring-blue-400');
+          setTimeout(() => card.classList.remove('ring-2', 'ring-blue-400'), 2000);
+        }
+      }, 300);
+    }
+  };
+
+  /**
+   * MODULE: CHARTING
+   */
+  const Charts = {
+    renderBatch(type) {
+      const container = document.getElementById(`${type}-container`);
+      const canvases = container.querySelectorAll('canvas');
+      canvases.forEach(canvas => {
+        if (canvas.dataset.rendered) return;
+        const code = canvas.dataset.code;
+        const history = State.stationHistory[code];
+        if (!history) return;
+        if (type === 'lake') {
+          this.drawLakeStorageChart(canvas, history);
+          const flowCanvas = document.getElementById(`chart-flow-${code}`);
+          if (flowCanvas) {
+            this.drawLakeFlowChart(flowCanvas, history);
+            flowCanvas.dataset.rendered = "true";
+          }
+        } else {
+          this.drawRiverChart(canvas, history);
+        }
+        canvas.dataset.rendered = "true";
+      });
+    },
+    destroyAll() { State.chartInstances.forEach(c => c.destroy()); State.chartInstances = []; },
+    commonOptions: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { 
+        legend: { 
+          display: false, // Hide legend as it's redundant for single datasets
+          labels: { 
+            font: { size: 9 },
+            boxWidth: 10,
+            boxHeight: 10,
+          } 
+        }, 
+        tooltip: { animation: false } 
+      },
+      elements: { point: { radius: 0, hoverRadius: 4 } }, 
+      scales: { 
+        x: { 
+          display: true,
+          type: 'time',
+          time: {
+            unit: 'day',
+            tooltipFormat: 'dd/MM/yyyy HH:mm',
+            displayFormats: { day: 'dd/MM' }
+          },
+          ticks: { font: { size: 9 }, maxTicksLimit: 3, autoSkip: true }
+        }, 
+        y: { 
+          ticks: { font: { size: 9 }, maxTicksLimit: 4 } 
+        } 
+      }
+    },
+    drawLakeStorageChart(canvas, data) {
+      const chart = new Chart(canvas, { type: 'line', data: { labels: Data.downsample(data, 'ts'), datasets: [
+        { label: 'Dung tích thực đo (triệu m3)', data: Data.downsample(data, 'storage'), borderColor: '#3b82f6', borderWidth: 1.5, fill: true, backgroundColor: '#3b82f610', yAxisID: 'y', spanGaps: true },
+        { label: 'Tỷ lệ đầy', data: Data.downsample(data, 'percent'), borderColor: '#f97316', borderWidth: 1.5, borderDash: [3,3], yAxisID: 'y1', spanGaps: true }
+      ]}, options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { display: true } }, scales: { ...this.commonOptions.scales, y: { ...this.commonOptions.scales.y, position: 'left', grid: { drawOnChartArea: false } }, y1: { position: 'right', grid: { drawOnChartArea: true }, ticks: { ...this.commonOptions.scales.y.ticks, callback: value => `${parseFloat(value.toFixed(1))}%` } } } } });
+      State.chartInstances.push(chart);
+    },
+    drawRiverChart(canvas, data) {
+      const latest = data.length ? data[data.length - 1] : {};
+      const labels = Data.downsample(data, 'ts');
+      const datasets = [
+        { label: 'Mực nước (m)', data: Data.downsample(data, 'water'), borderColor: '#0ea5e9', borderWidth: 2, fill: true, backgroundColor: '#0ea5e920', tension: 0.1, spanGaps: true }
+      ];
+
+      const alertLevels = [
+        { level: 'bd1', label: 'BĐ1', color: '#facc15' },
+        { level: 'bd2', label: 'BĐ2', color: '#f97316' },
+        { level: 'bd3', label: 'BĐ3', color: '#ef4444' }
+      ];
+
+      alertLevels.forEach(alert => {
+        if (latest[alert.level]) {
+          datasets.push({
+            label: alert.label,
+            data: Array(labels.length).fill(latest[alert.level]),
+            borderColor: alert.color,
+            borderWidth: 1,
+            borderDash: [4, 4],
+            pointRadius: 0,
+            fill: false,
+          });
+        }
+      });
+
+      const chart = new Chart(canvas, { type: 'line', data: { labels, datasets }, options: this.commonOptions });
+      State.chartInstances.push(chart);
+    },
+    drawLakeFlowChart(canvas, data) {
+      const chart = new Chart(canvas, { type: 'line', data: { labels: Data.downsample(data, 'ts'), datasets: [ // FIX: Use ts for time scale
+        { label: 'Q đến (m3/s)', data: Data.downsample(data, 'qIn'), borderColor: '#22c55e', borderWidth: 1.5, fill: false, spanGaps: true },
+        { label: 'Q xả (m3/s)', data: Data.downsample(data, 'qOut'), borderColor: '#ef4444', borderWidth: 1.5, fill: false, spanGaps: true }
+      ]}, options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { display: true } } } });
+      State.chartInstances.push(chart);
+    },
+    drawDetailChart(code) {
+      const history = State.stationHistory[code];
+      if (!history || !history.length) return;
+      const type = history[0].type;
+      const container = document.getElementById('detail-chart-container');
+      container.innerHTML = '<canvas id="detail-chart-canvas"></canvas>';
+      
+      if (type === 'lake') {
+        // For lakes, show two charts: storage and flow
+        container.innerHTML = `
+          <div class="h-1/2 relative"><canvas id="detail-chart-canvas-storage"></canvas></div>
+          <div class="h-1/2 relative pt-4"><canvas id="detail-chart-canvas-flow"></canvas></div>
+        `;
+        this.drawLakeStorageChart(document.getElementById('detail-chart-canvas-storage'), history);
+        this.drawLakeFlowChart(document.getElementById('detail-chart-canvas-flow'), history);
+      } else {
+        // For rivers, show the single water level chart
+        this.drawRiverChart(document.getElementById('detail-chart-canvas'), history);
+      }
+    },
+  };
+
+  const App = {
+    init() { MapManager.init(); Data.init(); },
+    switchBasin(basinName) {
+      UI.resetSections();
+      State.activeBasin = basinName;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.val === basinName));
+      document.getElementById('basin-select').value = basinName;
+      document.getElementById('sidebar-title').textContent = basinName === '__ALL__' ? 'Tất cả lưu vực' : `Lưu vực sông ${basinName}`;
+      MapManager.renderBasin(basinName);
+      Charts.destroyAll(); State.stationHistory = {};
+      UI.renderSummary();
+      UI.toggleSection('summary'); // Open summary by default
+      const records = Data.getRecordsForBasin(basinName);
+      UI.prepareChartContainers('lake', records.filter(r => r.type === 'lake'));
+      UI.prepareChartContainers('river', records.filter(r => r.type === 'river'));
+    },
+    showDetailView(code) {
+      const history = State.stationHistory[code];
+      if (!history || !history.length) return;
+      const latest = history[history.length - 1];
+      
+      document.getElementById('detail-title').textContent = latest.name;
+      document.getElementById('detail-subtitle').textContent = `Sông ${latest.basin} • ${latest.province}`;
+      
+      const detailView = document.getElementById('detail-view');
+      detailView.classList.remove('hidden');
+      setTimeout(() => detailView.classList.remove('opacity-0'), 10); // Fade in
+      
+      Charts.drawDetailChart(code);
+    },
+    hideDetailView() {
+      const detailView = document.getElementById('detail-view');
+      detailView.classList.add('opacity-0');
+      setTimeout(() => detailView.classList.add('hidden'), 300); // Hide after fade out
+    },
+  };
+
+
+  /**
+   * MODULE: SEARCH
+   */
+  const Search = {
+    getSortedProvinces() {
+      const prioritized = ['thành phố Huế', 'thành phố Đà Nẵng', 'tỉnh Quảng Ngãi', 'tỉnh Gia Lai', 'tỉnh Đắk Lắk'];
+      const allProvinces = [...new Set(State.provinces.map(f => f.properties['Tỉnh thành mới']))];
+      const remaining = allProvinces
+        .filter(p => !prioritized.includes(p))
+        .sort((a, b) => a.localeCompare(b, 'vi'));
+      return [...prioritized, ...remaining];
+    },
+    showSuggestions() {
+      const suggestionsEl = document.getElementById('search-suggestions');
+      const listEl = document.getElementById('suggestions-list');
+      suggestionsEl.classList.remove('hidden');
+      
+      if (listEl.children.length > 0) return;
+
+      // Add "Your Location" option
+      const myLocation = `<li onclick="Search.useMyLocation()" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+        Vị trí của bạn
+      </li>`;
+      listEl.insertAdjacentHTML('beforeend', myLocation);
+
+      // Add province suggestions
+      const provinceNames = this.getSortedProvinces();
+      provinceNames.slice(0, 5).forEach(name => { // Show first 5 as suggestions (the prioritized list)
+        const provinceHTML = `<li onclick="Search.selectProvince('${name}')" data-name="${name}" class="suggestion-item px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm">${name.replace('tỉnh ', '')}</li>`;
+        listEl.insertAdjacentHTML('beforeend', provinceHTML);
+      });
+    },
+    hideSuggestions() {
+      document.getElementById('search-suggestions').classList.add('hidden');
+    },
+    filter() {
+      const input = document.getElementById('search-input');
+      const filter = input.value.toUpperCase();
+      const ul = document.getElementById('suggestions-list');
+      ul.innerHTML = ''; // Clear current suggestions
+
+      // Re-add "Your Location"
+      const myLocation = `<li onclick="Search.useMyLocation()" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm flex items-center gap-2">...</li>`;
+      ul.insertAdjacentHTML('beforeend', myLocation.replace('...', 'Vị trí của bạn'));
+
+      const provinceNames = this.getSortedProvinces();
+      provinceNames.forEach(name => {
+        if (name.toUpperCase().indexOf(filter) > -1) {
+          const provinceHTML = `<li onclick="Search.selectProvince('${name}')" data-name="${name}" class="suggestion-item px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm">${name.replace('tỉnh ', '')}</li>`;
+          ul.insertAdjacentHTML('beforeend', provinceHTML);
+        }
+      });
+    },
+    useMyLocation() {
+      MapManager.instance.locate({setView: true, maxZoom: 10});
+    },
+    selectProvince(name) {
+      const province = State.provinces.find(f => f.properties['Tỉnh thành mới'] === name);
+      if (province) {
+        const layer = L.geoJSON(province);
+        MapManager.instance.flyToBounds(layer.getBounds(), { padding: [50, 50] });
+      }
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', () => App.init());
+  </script>
 </body>
 </html>
