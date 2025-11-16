@@ -48,11 +48,11 @@
       @media (max-width: 768px) {
         #legend-container {
           transform-origin: bottom left;
-          transform: scale(0.8);
+          transform: scale(0.8); /* Was 0.7, made 10% bigger */
         }
         #layer-control-wrapper {
           transform-origin: bottom right;
-          transform: scale(0.9);
+          transform: scale(0.9); /* Was 0.7, made ~20% bigger */
         }
       }
     </style>
@@ -391,6 +391,12 @@
       this.instance = L.map('map', { 
         center: [14, 108.5], zoom: 6, preferCanvas: true, zoomControl: false, attributionControl: false
       });
+      // Create custom panes to control layer order
+      this.instance.createPane('riskPane');
+      this.instance.getPane('riskPane').style.zIndex = 420; // Above overlays (400), below markers (600)
+      this.instance.createPane('stationPane');
+      this.instance.getPane('stationPane').style.zIndex = 430; // Above risk areas
+
       this.layers.landslide = L.layerGroup();
       // Add a dedicated layer for highlighting features like provinces
       this.layers.highlight = L.layerGroup().addTo(this.instance);
@@ -427,7 +433,8 @@
 
       this.layers.landslideGeoJSON = L.geoJSON({ type: 'FeatureCollection', features: featuresWithRisk }, {
         style: this.styleLandslideArea,
-        interactive: false
+        interactive: false,
+        pane: 'riskPane' // Render in the custom risk pane
       });
       this.layers.landslide.addLayer(this.layers.landslideGeoJSON);
     },
@@ -547,7 +554,7 @@
         const html = `<svg width="24" height="24" viewBox="0 0 24 24" fill="${lakeColor}" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg>`;
         marker = L.marker([r.lat, r.lng], { icon: L.divIcon({ className: 'lake-icon', html, iconSize: [24, 24] }) });
       } else {
-        marker = L.circleMarker([r.lat, r.lng], { radius: r.alert > 0 ? 6 + (r.alert * 2) : 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 1 });
+        marker = L.circleMarker([r.lat, r.lng], { radius: r.alert > 0 ? 6 + (r.alert * 2) : 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 1, pane: 'stationPane' });
       }
       
       const popupTitle = `<div class="text-white p-2 rounded-t-lg" style="background-color: ${isLake ? lakeColor : color};">
@@ -1098,9 +1105,9 @@
         const highlightStyle = {
           color: '#facc15', // yellow-400
           weight: 3,
-          opacity: 0.9,
-          fillColor: '#facc15',
-          fillOpacity: 0.2
+          opacity: 1,
+          fillColor: 'transparent',
+          fillOpacity: 0
         };
         const layer = L.geoJSON(province, { style: highlightStyle }).addTo(MapManager.layers.highlight);
         MapManager.instance.flyToBounds(layer.getBounds(), { padding: [50, 50], duration: 1 });
