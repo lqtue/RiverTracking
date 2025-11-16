@@ -81,14 +81,43 @@
     
     <div class="flex-1 relative z-0">
       <div id="map" class="w-full h-full"></div>
-      <div class="absolute bottom-2 left-2 bg-white/80 backdrop-blur-sm p-1 lg:p-1.5 rounded text-[8px] lg:text-[10px] text-slate-700 shadow-md z-[400]">
+      <div class="absolute bottom-2 left-2 bg-white/80 backdrop-blur-sm p-1 rounded text-[8px] text-slate-700 shadow-md z-[400]">
         <span>Dữ liệu: Viện Khoa học Thuỷ lợi & Hệ thống giám sát thiên tai Việt Nam</span>
         <span class="block sm:inline">• Bản đồ nền: Google Satellite</span>
+      </div>
+      <!-- Map Legend -->
+      <div class="absolute bottom-2 right-2 z-[400] flex flex-col items-end gap-1">
+        <div id="legend-container" class="bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-md text-slate-700 text-xs w-48">
+          <h4 class="font-bold mb-1 text-center">Chú giải</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <div class="font-semibold mb-1">Tỷ lệ dung tích hồ chứa</div>
+              <div class="flex flex-col gap-1 text-[11px]">
+                <div class="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"></path></svg> >100%</div>
+                <div class="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="#f97316" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"></path></svg> ≥95%</div>
+                <div class="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="#eab308" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"></path></svg> ≥90%</div>
+                <div class="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="#0ea5e9" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"></path></svg> &lt;90%</div>
+              </div>
+            </div>
+            <div class="border-l pl-2">
+              <div class="font-semibold mb-1">Trạm mực nước sông</div>
+              <div class="flex flex-col gap-1 text-[11px]">
+                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full" style="background-color:#ef4444;"></div> Trên BĐ3</div>
+                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full" style="background-color:#f97316;"></div> Trên BĐ2</div>
+                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full" style="background-color:#eab308;"></div> Trên BĐ1</div>
+                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full" style="background-color:#0ea5e9;"></div> Dưới BĐ1</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button onclick="UI.toggleLegend()" class="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center text-blue-600 hover:bg-white transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </button>
       </div>
     </div>
 
     <aside class="hidden lg:flex w-full lg:w-96 bg-white border-l border-slate-200 flex-col z-10 shadow-xl">
-      <div class="p-3 border-b bg-slate-50">
+      <div class="p-2.5 border-b bg-slate-50">
         <h2 class="text-sm font-bold text-slate-800" id="sidebar-title">Chi tiết trạm</h2>
         <p class="text-xs text-slate-500">Mở các mục bên dưới để xem thông tin & biểu đồ</p>
       </div>
@@ -96,39 +125,39 @@
       <div class="flex-1 overflow-y-auto custom-scroll p-2 space-y-2">
         
         <div class="border rounded-lg overflow-hidden bg-white">
-          <button onclick="UI.toggleSection('summary')" class="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition">
+          <button onclick="UI.toggleSection('summary')" class="w-full p-1.5 flex items-center justify-between hover:bg-slate-50 transition">
             <span class="font-semibold text-sm text-slate-700 flex items-center gap-2">
               <span id="summary-chevron" class="transform -rotate-90 transition-transform duration-200">▼</span> Tổng quan
             </span>
           </button>
           <div id="summary-content" class="accordion-content bg-slate-50">
-            <div id="summary-container" class="p-3 space-y-4 text-xs">
+            <div id="summary-container" class="p-1.5 space-y-2 text-xs">
               <!-- Summary content will be populated by JS -->
             </div>
           </div>
         </div>
 
         <div class="border rounded-lg overflow-hidden bg-white">
-          <button onclick="UI.toggleSection('lake')" class="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition">
+          <button onclick="UI.toggleSection('lake')" class="w-full p-1.5 flex items-center justify-between hover:bg-slate-50 transition">
             <span class="font-semibold text-sm text-emerald-700 flex items-center gap-2">
               <span id="lake-chevron" class="transform -rotate-90 transition-transform duration-200">▼</span> Hồ chứa
             </span>
             <span id="lake-count" class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">0</span>
           </button>
           <div id="lake-content" class="accordion-content bg-slate-50">
-            <div id="lake-container" class="p-2 space-y-3"></div>
+            <div id="lake-container" class="p-1.5 space-y-3"></div>
           </div>
         </div>
 
         <div class="border rounded-lg overflow-hidden bg-white">
-          <button onclick="UI.toggleSection('river')" class="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition">
+          <button onclick="UI.toggleSection('river')" class="w-full p-1.5 flex items-center justify-between hover:bg-slate-50 transition">
             <span class="font-semibold text-sm text-blue-700 flex items-center gap-2">
               <span id="river-chevron" class="transform -rotate-90 transition-transform duration-200">▼</span> Trạm sông
             </span>
             <span id="river-count" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">0</span>
           </button>
           <div id="river-content" class="accordion-content bg-slate-50">
-            <div id="river-container" class="p-2 space-y-3"></div>
+            <div id="river-container" class="p-1.5 space-y-3"></div>
           </div>
         </div>
 
@@ -138,7 +167,7 @@
 
   <!-- Mobile Detail View -->
   <div id="detail-view" class="absolute inset-0 bg-white z-[1000] flex flex-col p-2 hidden transition-opacity duration-300 opacity-0">
-    <div class="flex-none flex justify-between items-center mb-2 p-2">
+    <div class="flex-none flex justify-between items-center mb-1 p-2">
       <div>
         <h3 id="detail-title" class="font-bold text-lg text-slate-800"></h3>
         <p id="detail-subtitle" class="text-sm text-slate-500"></p>
@@ -170,6 +199,12 @@
     activeBasin: '__ALL__', maxAlerts: {}, geoJSON: null,
     provinces: [], sections: { summary: false, lake: false, river: false },
     chartInstances: [], stationHistory: {}
+  };
+
+  // Helper function to format numbers with a comma decimal separator
+  const formatDecimal = (num, precision = 2) => {
+    if (num === null || num === undefined || isNaN(num)) return '-';
+    return parseFloat(num).toFixed(precision).replace('.', ',');
   };
 
   /**
@@ -236,11 +271,21 @@
     },
 
     transformRecord(r) {
+      // Helper to parse "dd/MM/yyyy HH:mm" format as local time
+      const parseVnDate = (dateString) => {
+        if (!dateString) return 0;
+        const parts = dateString.match(/(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})/);
+        if (!parts) return Date.parse(dateString); // Fallback for other formats
+        // new Date(year, monthIndex, day, hours, minutes)
+        return new Date(parts[3], parts[2] - 1, parts[1], parts[4], parts[5]).getTime();
+      };
+
       const num = (v) => v && v !== '' ? parseFloat(v.replace(',', '.')) : null;
       return {
         code: r['Mã trạm/LakeCode'], name: r['Trạm/Hồ'], basin: r['Tên sông/Lưu vực'], alertTrend: r['Cảnh báo/Xu thế'], province: r['Tên tỉnh'] || '',
         type: (r['type'] || 'river').toLowerCase(), timeStr: r['Thời gian (UTC)'],
-        ts: Date.parse(r['Thời gian (UTC)'] + 'Z') || 0, // Append 'Z' to ensure UTC parsing
+        // The source time is GMT+7, but the column name says UTC. We treat it as local time to avoid double-offsetting.
+        ts: parseVnDate(r['Thời gian (UTC)']),
         water: num(r['Mực nước (m)']), alert: num(r['Cảnh báo value (0-4)']) || 0,
         storage: num(r['Dung tích (m3)']), percent: num(r['Tỷ lệ dung tích (%)']), // storage is in millions, so we'll format it later
         qIn: num(r['Q đến (m3/s)']), qOut: num(r['Q xả (m3/s)']),
@@ -274,16 +319,22 @@
    * MODULE: MAP MANAGER
    */
   const MapManager = {
-    instance: null, layers: { river: null, station: null },
+    instance: null, layers: { river: null, station: null, highlight: null },
 
     init() {
       this.instance = L.map('map', { 
         center: [16, 108], zoom: 6, preferCanvas: true, zoomControl: false, attributionControl: false
       });
+      // Add a dedicated layer for highlighting features like provinces
+      this.layers.highlight = L.layerGroup().addTo(this.instance);
+      // Add event listeners for the geolocation feature
+      this.instance.on('locationfound', this.onLocationFound.bind(this));
+      this.instance.on('locationerror', this.onLocationError.bind(this));
+
       L.control.zoom({ position: 'topright' }).addTo(this.instance);
       
       // FIX: Optimized tile loading for smoother "cache" feel
-      L.tileLayer('https://mt0.google.com/vt/lyrs=s&hl=vi&x={x}&y={y}&z={z}', {
+      L.tileLayer('https://mt0.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}', {
         keepBuffer: 10,       // FIX: Keep more tiles in memory
         updateWhenIdle: false // FIX: Load tiles while panning
       }).addTo(this.instance);
@@ -302,6 +353,7 @@
     renderBasin(basinName) {
       this.layers.river.clearLayers();
       this.layers.station.clearLayers();
+      this.layers.highlight.clearLayers(); // Clear highlight when switching basin
       const records = Data.getRecordsForBasin(basinName, true);
       const activeBasins = new Set(records.map(r => r.basin));
 
@@ -362,18 +414,19 @@
         marker = L.circleMarker([r.lat, r.lng], { radius: r.alert > 0 ? 6 + (r.alert * 2) : 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 1 });
       }
       
-      const popupTitle = `<div class="font-bold text-white p-2 rounded-t-lg" style="background-color: ${isLake ? lakeColor : color};">
-        ${r.name} <span class="font-normal text-white/80 text-xs">- ${r.province}</span>
+      const popupTitle = `<div class="text-white p-2 rounded-t-lg" style="background-color: ${isLake ? lakeColor : color};">
+        <div class="font-bold text-sm">${isLake ? 'Hồ' : 'Trạm'} ${r.name}</div>
+        <div class="font-normal text-white/80 text-[11px] leading-tight">Sông ${r.basin}, ${r.province}</div>
       </div>`;
-      const riverInfo = `<div class="text-slate-500">Mực nước:</div><div class="font-mono font-bold">${r.water||'-'} m</div><div class="text-slate-500">Cảnh báo:</div><div class="font-bold" style="color:${color}">${r.alertTrend || `Mức ${r.alert}`}</div>`;
-      const lakeInfo = `<div class="text-slate-500">Dung tích:</div><div class="font-mono font-bold">${r.storage ? r.storage.toLocaleString('vi-VN') : '-'} triệu m³</div><div class="text-slate-500">Tỷ lệ đầy:</div><div class="font-mono font-bold" style="color:${lakeColor}">${r.percent||'-'}%</div>`;
+      const riverInfo = `<div class="text-slate-500">Mực nước:</div><div class="font-mono font-bold">${formatDecimal(r.water, 2)} m</div><div class="text-slate-500">Cảnh báo:</div><div class="font-bold" style="color:${color}">${r.alertTrend || `Mức ${r.alert}`}</div>`;
+      const lakeInfo = `<div class="text-slate-500">Dung tích:</div><div class="font-mono font-bold">${r.storage ? formatDecimal(r.storage, 2) : '-'} triệu m³</div><div class="text-slate-500">Tỷ lệ đầy:</div><div class="font-mono font-bold" style="color:${lakeColor}">${formatDecimal(r.percent, 2)}%</div>`;
       
       const date = new Date(r.ts);
-      const hours = date.getUTCHours();
-      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-      const day = String(date.getUTCDate()).padStart(2, '0');
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-      const year = date.getUTCFullYear();
+      const hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
       const formattedTime = `Cập nhật: ${hours}h${minutes}, ngày ${day}/${month}/${year}`;
       
       const detailButton = `<div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
@@ -390,7 +443,7 @@
         const m = e.target;
         m.openPopup(); // Open immediately to trigger Leaflet's auto-pan
         setTimeout(() => { if (m.isPopupOpen()) { m.openPopup(); } }, 100); // Re-open to fix position
-        UI.scrollToChart(r.type, r.code);
+        // UI.scrollToChart(r.type, r.code);
       });
       return marker;
     },
@@ -413,6 +466,32 @@
       return alertLevel > 0 
         ? colors[alertLevel] 
         : (CONFIG.COLORS[basin.length % CONFIG.COLORS.length]);
+    },
+
+    onLocationFound(e) {
+      // Clear any previous highlights (like a selected province)
+      this.layers.highlight.clearLayers();
+
+      const radius = e.accuracy;
+      // Draw a circle representing the accuracy of the location
+      L.circle(e.latlng, radius, {
+        color: '#2563eb',
+        fillColor: '#60a5fa',
+        fillOpacity: 0.2,
+        weight: 1
+      }).addTo(this.layers.highlight);
+
+      // Draw a marker at the center of the location
+      L.circleMarker(e.latlng, {
+        radius: 8,
+        color: '#fff',
+        weight: 2,
+        fillColor: '#2563eb',
+        fillOpacity: 1
+      }).addTo(this.layers.highlight);
+    },
+    onLocationError(e) {
+      alert("Không thể tìm thấy vị trí của bạn. Vui lòng kiểm tra cài đặt trình duyệt.");
     }
   };
 
@@ -425,12 +504,12 @@
       // Find the most recent record
       const latest = State.latestRecords.reduce((a, b) => (a.ts > b.ts ? a : b));
       const date = new Date(latest.ts);
-
-      const hours = date.getUTCHours();
-      const day = String(date.getUTCDate()).padStart(2, '0');
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-      const year = date.getUTCFullYear();
-
+      
+      // Use local time methods instead of UTC
+      const hours = date.getHours();
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
       const formattedTime = `Cập nhật: ${hours}h, ngày ${day}/${month}/${year}`;
       document.getElementById('live-time').textContent = formattedTime;
     },
@@ -458,8 +537,8 @@
       createBtn('Tất cả lưu vực', '__ALL__');
       createOption('Tất cả lưu vực', '__ALL__');
       State.basins.forEach(b => {
-        createBtn(b, b);
-        createOption(`Lưu vực sông ${b}`, b);
+        createBtn(`Sông ${b}`, b);
+        createOption(`Sông ${b}`, b);
       });
       selectEl.onchange = (e) => App.switchBasin(e.target.value);
     },
@@ -487,6 +566,11 @@
       if (State.sections[type]) {
         content.style.maxHeight = content.scrollHeight + "px";
       }
+    },
+
+    toggleLegend() {
+      const legend = document.getElementById('legend-container');
+      legend.classList.toggle('hidden');
     },
 
     resetSections() {
@@ -544,16 +628,16 @@
         };
 
         const basinHTML = `
-          <div class="pb-3 border-b last:border-b-0">
-            <h4 class="font-bold text-slate-700 mb-2">Sông ${basinName}</h4>
+          <div class="pb-1.5 border-b last:border-b-0">
+            <h4 class="font-bold text-slate-700 mb-1">Sông ${basinName}</h4>
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <div class="font-semibold text-emerald-700 mb-1">Hồ chứa</div>
+                <div class="font-semibold text-emerald-700 mb-1">Tỷ lệ dung tích hồ chứa</div>
                 ${summaryItem('lake', '#ef4444', '> 100%', data.lakes.red)} ${summaryItem('lake', '#f97316', '≥ 95%', data.lakes.orange)} ${summaryItem('lake', '#eab308', '≥ 90%', data.lakes.yellow)} ${summaryItem('lake', '#0ea5e9', '< 90%', data.lakes.blue)}
               </div>
               <div>
                 <div class="font-semibold text-blue-700 mb-1">Trạm sông</div>
-                ${summaryItem('river', '#ef4444', 'BĐ3+', data.rivers.red)} ${summaryItem('river', '#f97316', 'BĐ2', data.rivers.orange)} ${summaryItem('river', '#eab308', 'BĐ1', data.rivers.yellow)} ${summaryItem('river', '#0ea5e9', 'Bình thường', data.rivers.blue)}
+                ${summaryItem('river', '#ef4444', 'BĐ3+', data.rivers.red)} ${summaryItem('river', '#f97316', 'BĐ2', data.rivers.orange)} ${summaryItem('river', '#eab308', 'BĐ1', data.rivers.yellow)} ${summaryItem('river', '#0ea5e9', 'Dưới BĐ1', data.rivers.blue)}
               </div>
             </div>
           </div>`;
@@ -583,14 +667,18 @@
       sortedKeys.slice(0, limit).forEach(code => {
         const history = groups[code];
         const latest = history[history.length - 1];
-        const alertLvl = latest.alert || 0; const percent = latest.percent || 0;
+        const isLake = type === 'lake';
+        const alertLvl = latest.alert || 0; 
+        const percent = latest.percent || 0;
+        const color = isLake ? MapManager.getLakeColor(percent) : MapManager.getAlertColor(alertLvl);
+        const valueText = isLake ? `${formatDecimal(percent, 2)}%` : (latest.alertTrend || `Mức ${alertLvl}`);
         const html = `
           <div class="border rounded bg-white p-2 shadow-sm" id="card-${code}">
-            <div class="flex justify-between items-start mb-2"><div>
+            <div class="flex justify-between items-start mb-1"><div>
                 <div class="font-bold text-xs text-slate-800">${latest.name}</div>
-                <div class="text-[10px] text-slate-500">${latest.basin} • ${latest.province || ''}</div>
+                <div class="text-[10px] text-slate-500">Sông ${latest.basin} • ${latest.province || ''}</div>
               </div>
-              <div class="text-xs font-mono font-bold ${alertLvl >= 2 ? 'text-red-600' : 'text-blue-600'}">${type === 'river' ? (latest.alertTrend || `Mức ${alertLvl}`) : `${percent}%`}</div>
+              <div class="text-xs font-mono font-bold" style="color: ${color};">${valueText}</div>
             </div>
             <div class="h-32 w-full relative"><canvas id="chart-${code}" data-code="${code}"></canvas></div>
             ${type === 'lake' ? `
@@ -649,13 +737,13 @@
     destroyAll() { State.chartInstances.forEach(c => c.destroy()); State.chartInstances = []; },
     commonOptions: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { 
-        legend: { 
+      plugins: {
+        legend: {
           display: false, // Hide legend as it's redundant for single datasets
-          labels: { 
-            font: { size: 9 },
-            boxWidth: 10,
-            boxHeight: 10,
+          labels: {
+            font: { size: 10 },
+            boxWidth: 8,
+            boxHeight: 8
           } 
         }, 
         tooltip: { animation: false } 
@@ -667,7 +755,7 @@
           type: 'time',
           time: {
             unit: 'day',
-            tooltipFormat: 'dd/MM/yyyy HH:mm',
+            tooltipFormat: "H'h'mm, dd/MM/yyyy",
             displayFormats: { day: 'dd/MM' }
           },
           ticks: { font: { size: 9 }, maxTicksLimit: 3, autoSkip: true }
@@ -679,9 +767,9 @@
     },
     drawLakeStorageChart(canvas, data) {
       const chart = new Chart(canvas, { type: 'line', data: { labels: Data.downsample(data, 'ts'), datasets: [
-        { label: 'Dung tích thực đo (triệu m3)', data: Data.downsample(data, 'storage'), borderColor: '#3b82f6', borderWidth: 1.5, fill: true, backgroundColor: '#3b82f610', yAxisID: 'y', spanGaps: true },
+        { label: 'Dung tích (triệu m³)', data: Data.downsample(data, 'storage'), borderColor: '#3b82f6', borderWidth: 1.5, fill: true, backgroundColor: '#3b82f610', yAxisID: 'y', spanGaps: true },
         { label: 'Tỷ lệ đầy', data: Data.downsample(data, 'percent'), borderColor: '#f97316', borderWidth: 1.5, borderDash: [3,3], yAxisID: 'y1', spanGaps: true }
-      ]}, options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { display: true } }, scales: { ...this.commonOptions.scales, y: { ...this.commonOptions.scales.y, position: 'left', grid: { drawOnChartArea: false } }, y1: { position: 'right', grid: { drawOnChartArea: true }, ticks: { ...this.commonOptions.scales.y.ticks, callback: value => `${parseFloat(value.toFixed(1))}%` } } } } });
+      ]}, options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { ...this.commonOptions.plugins.legend, display: true } }, scales: { ...this.commonOptions.scales, y: { ...this.commonOptions.scales.y, position: 'left', grid: { drawOnChartArea: false } }, y1: { position: 'right', grid: { drawOnChartArea: true }, ticks: { ...this.commonOptions.scales.y.ticks, callback: value => `${formatDecimal(value, 2)}%` } } } } });
       State.chartInstances.push(chart);
     },
     drawRiverChart(canvas, data) {
@@ -711,14 +799,14 @@
         }
       });
 
-      const chart = new Chart(canvas, { type: 'line', data: { labels, datasets }, options: this.commonOptions });
+      const chart = new Chart(canvas, { type: 'line', data: { labels, datasets }, options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { ...this.commonOptions.plugins.legend, display: true } } } });
       State.chartInstances.push(chart);
     },
     drawLakeFlowChart(canvas, data) {
       const chart = new Chart(canvas, { type: 'line', data: { labels: Data.downsample(data, 'ts'), datasets: [ // FIX: Use ts for time scale
-        { label: 'Q đến (m3/s)', data: Data.downsample(data, 'qIn'), borderColor: '#22c55e', borderWidth: 1.5, fill: false, spanGaps: true },
-        { label: 'Q xả (m3/s)', data: Data.downsample(data, 'qOut'), borderColor: '#ef4444', borderWidth: 1.5, fill: false, spanGaps: true }
-      ]}, options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { display: true } } } });
+        { label: 'Lưu lượng đến (m³/s)', data: Data.downsample(data, 'qIn'), borderColor: '#22c55e', borderWidth: 1.5, fill: false, spanGaps: true },
+        { label: 'Lưu lượng xả (m³/s)', data: Data.downsample(data, 'qOut'), borderColor: '#ef4444', borderWidth: 1.5, fill: false, spanGaps: true }
+      ]}, options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { ...this.commonOptions.plugins.legend, display: true } } } });
       State.chartInstances.push(chart);
     },
     drawDetailChart(code) {
@@ -754,7 +842,6 @@
       MapManager.renderBasin(basinName);
       Charts.destroyAll(); State.stationHistory = {};
       UI.renderSummary();
-      UI.toggleSection('summary'); // Open summary by default
       const records = Data.getRecordsForBasin(basinName);
       UI.prepareChartContainers('lake', records.filter(r => r.type === 'lake'));
       UI.prepareChartContainers('river', records.filter(r => r.type === 'river'));
@@ -786,7 +873,13 @@
    */
   const Search = {
     getSortedProvinces() {
-      const prioritized = ['thành phố Huế', 'thành phố Đà Nẵng', 'tỉnh Quảng Ngãi', 'tỉnh Gia Lai', 'tỉnh Đắk Lắk'];
+      const prioritized = [
+        'TP Huế',
+        'TP Đà Nẵng',
+        'tỉnh Quảng Ngãi', 
+        'tỉnh Gia Lai', 
+        'tỉnh Đắk Lắk',
+      ];
       const allProvinces = [...new Set(State.provinces.map(f => f.properties['Tỉnh thành mới']))];
       const remaining = allProvinces
         .filter(p => !prioritized.includes(p))
@@ -797,22 +890,7 @@
       const suggestionsEl = document.getElementById('search-suggestions');
       const listEl = document.getElementById('suggestions-list');
       suggestionsEl.classList.remove('hidden');
-      
-      if (listEl.children.length > 0) return;
-
-      // Add "Your Location" option
-      const myLocation = `<li onclick="Search.useMyLocation()" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
-        Vị trí của bạn
-      </li>`;
-      listEl.insertAdjacentHTML('beforeend', myLocation);
-
-      // Add province suggestions
-      const provinceNames = this.getSortedProvinces();
-      provinceNames.slice(0, 5).forEach(name => { // Show first 5 as suggestions (the prioritized list)
-        const provinceHTML = `<li onclick="Search.selectProvince('${name}')" data-name="${name}" class="suggestion-item px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm">${name.replace('tỉnh ', '')}</li>`;
-        listEl.insertAdjacentHTML('beforeend', provinceHTML);
-      });
+      this.filter(); // Just call filter to populate
     },
     hideSuggestions() {
       document.getElementById('search-suggestions').classList.add('hidden');
@@ -820,18 +898,29 @@
     filter() {
       const input = document.getElementById('search-input');
       const filter = input.value.toUpperCase();
-      const ul = document.getElementById('suggestions-list');
-      ul.innerHTML = ''; // Clear current suggestions
+      const listEl = document.getElementById('suggestions-list');
+      listEl.innerHTML = ''; // Clear current suggestions
 
-      // Re-add "Your Location"
-      const myLocation = `<li onclick="Search.useMyLocation()" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm flex items-center gap-2">...</li>`;
-      ul.insertAdjacentHTML('beforeend', myLocation.replace('...', 'Vị trí của bạn'));
+      const createSuggestionItem = (text, value, isProvince) => {
+        // Use innerHTML to allow for icons
+        const li = document.createElement('li');
+        li.className = 'suggestion-item px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm';
+        li.innerHTML = text;
+        li.dataset.value = value;
+        li.onclick = () => isProvince ? this.selectProvince(value) : this.useMyLocation();
+        listEl.appendChild(li);
+      };
+
+      // Add "Your Location" with a locator icon
+      const myLocationHTML = `
+        <div class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>Vị trí của bạn</div>
+      `;
+      createSuggestionItem(myLocationHTML, 'my-location', false);
 
       const provinceNames = this.getSortedProvinces();
       provinceNames.forEach(name => {
         if (name.toUpperCase().indexOf(filter) > -1) {
-          const provinceHTML = `<li onclick="Search.selectProvince('${name}')" data-name="${name}" class="suggestion-item px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm">${name.replace('tỉnh ', '')}</li>`;
-          ul.insertAdjacentHTML('beforeend', provinceHTML);
+          createSuggestionItem(name.replace('tỉnh ', '').replace('thành phố ', ''), name, true);
         }
       });
     },
@@ -839,10 +928,20 @@
       MapManager.instance.locate({setView: true, maxZoom: 10});
     },
     selectProvince(name) {
+      // Clear any existing highlight first for efficiency
+      MapManager.layers.highlight.clearLayers();
+
       const province = State.provinces.find(f => f.properties['Tỉnh thành mới'] === name);
       if (province) {
-        const layer = L.geoJSON(province);
-        MapManager.instance.flyToBounds(layer.getBounds(), { padding: [50, 50] });
+        const highlightStyle = {
+          color: '#facc15', // yellow-400
+          weight: 3,
+          opacity: 0.9,
+          fillColor: '#facc15',
+          fillOpacity: 0.2
+        };
+        const layer = L.geoJSON(province, { style: highlightStyle }).addTo(MapManager.layers.highlight);
+        MapManager.instance.flyToBounds(layer.getBounds(), { padding: [50, 50], duration: 1 });
       }
     }
   };
