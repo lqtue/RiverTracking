@@ -39,7 +39,22 @@
         margin: 0;
       }
       .tab-btn { transition: all 0.2s; }
-      .tab-btn.active { background-color: #2563eb; color: white; }
+      .tab-btn.active { background-color: #2563eb; color: white !important; }
+      .tab-btn.active svg { color: white !important; }
+      .layer-btn.active { background-color: #2563eb !important; color: white !important; }
+      .layer-btn.active svg { color: white !important; }
+    </style>
+    <style>
+      @media (max-width: 768px) {
+        #legend-container {
+          transform-origin: bottom left;
+          transform: scale(0.7);
+        }
+        #layer-control-wrapper {
+          transform-origin: bottom right;
+          transform: scale(0.7);
+        }
+      }
     </style>
 </head>
 <body class="bg-slate-50 h-screen flex flex-col overflow-hidden">
@@ -81,16 +96,15 @@
     
     <div class="flex-1 relative z-0">
       <div id="map" class="w-full h-full"></div>
-      <div class="absolute bottom-2 left-2 bg-white/80 backdrop-blur-sm p-1 rounded text-[8px] text-slate-700 shadow-md z-[400]">
-        <span>Dữ liệu: Viện Khoa học Thuỷ lợi & Hệ thống giám sát thiên tai Việt Nam</span>
-        <span class="block sm:inline">• Bản đồ nền: Google Satellite</span>
-      </div>
       <!-- Map Legend -->
-      <div class="absolute bottom-2 right-2 z-[400] flex flex-col items-end gap-1">
-        <div id="legend-container" class="bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-md text-slate-700 text-xs w-48">
-          <h4 class="font-bold mb-1 text-center">Chú giải</h4>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
+      <div id="legend-wrapper" class="absolute bottom-2 left-2 z-[400] flex flex-col items-start gap-1">
+        <div id="legend-container" class="bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-md text-slate-700 text-xs w-52 relative">
+          <button onclick="UI.toggleLegend()" class="absolute top-1 right-1 w-5 h-5 bg-slate-100/50 hover:bg-slate-200/70 rounded-full flex items-center justify-center text-slate-500 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <h4 class="font-bold mb-1 text-center pr-4">Chú giải</h4>
+          <div id="legend-river-lake" class="grid grid-cols-2 gap-2">
+            <div class="pr-1">
               <div class="font-semibold mb-1">Tỷ lệ dung tích hồ chứa</div>
               <div class="flex flex-col gap-1 text-[11px]">
                 <div class="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"></path></svg> >100%</div>
@@ -99,7 +113,7 @@
                 <div class="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="#0ea5e9" stroke="white" stroke-width="2"><path d="M12 2L2 22h20L12 2z"></path></svg> &lt;90%</div>
               </div>
             </div>
-            <div class="border-l pl-2">
+            <div class="border-l pl-2 border-slate-200">
               <div class="font-semibold mb-1">Trạm mực nước sông</div>
               <div class="flex flex-col gap-1 text-[11px]">
                 <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full" style="background-color:#ef4444;"></div> Trên BĐ3</div>
@@ -109,11 +123,41 @@
               </div>
             </div>
           </div>
+          <div id="legend-risk" class="hidden mt-2 pt-2 border-t border-slate-200">
+            <div class="font-semibold mb-1">Nguy cơ sạt lở, lũ quét</div>
+            <div class="flex flex-col gap-1 text-[11px]">
+              <div class="flex items-center gap-1.5"><div class="w-3 h-3" style="background-color:rgba(239, 68, 68, 0.4);"></div> Rất cao</div>
+              <div class="flex items-center gap-1.5"><div class="w-3 h-3" style="background-color:rgba(249, 115, 22, 0.4);"></div> Cao</div>
+              <div class="flex items-center gap-1.5"><div class="w-3 h-3" style="background-color:rgba(234, 179, 8, 0.4);"></div> Trung bình</div>
+            </div>
+          </div>
+          <div class="mt-2 pt-1.5 border-t border-slate-200 text-[8px] text-slate-500 text-center">
+            <span>Dữ liệu: Viện Khoa học Thuỷ lợi & VNDMS</span><br>
+            <span>Bản đồ nền: Google Satellite & VNDMS</span>
+          </div>
         </div>
-        <button onclick="UI.toggleLegend()" class="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center text-blue-600 hover:bg-white transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <button id="legend-toggle-btn" onclick="UI.toggleLegend()" class="bg-white/80 backdrop-blur-sm rounded-lg shadow-md px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white transition hidden">
+          Chú giải
         </button>
       </div>
+      <!-- Layer/Basemap Selector -->
+      <div id="layer-control-wrapper" class="absolute bottom-2 right-2 z-[400]">
+        <div id="layer-control" class="bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-md flex flex-col gap-2">
+          <button data-layer="risk" onclick="App.switchLayer('risk')" class="layer-btn flex flex-col items-center justify-center gap-1 p-1 text-xs font-semibold rounded-md text-center hover:bg-slate-100 text-slate-600 w-20 h-20">
+            <img src="https://raw.githubusercontent.com/lqtue/RiverTracking/refs/heads/main/Flood.png" alt="Lũ quét icon" class="w-10 h-10 rounded">
+            <span class="text-[10px] leading-tight">Lũ quét, Sạt lở</span>
+          </button>
+          <button data-layer="river_lake" onclick="App.switchLayer('river_lake')" class="layer-btn flex flex-col items-center gap-1 p-1 text-xs font-semibold rounded-md text-center hover:bg-slate-100 text-slate-600">
+            <img src="https://raw.githubusercontent.com/lqtue/RiverTracking/refs/heads/main/Lake.png" alt="Sông & Hồ icon" class="w-10 h-10 rounded">
+            <span class="text-[10px] leading-tight">Sông & Hồ</span>
+          </button>
+          <button data-layer="all" onclick="App.switchLayer('all')" class="layer-btn active flex flex-col items-center gap-1 p-1 text-xs font-semibold rounded-md text-center hover:bg-slate-100 text-slate-600">
+            <img src="https://raw.githubusercontent.com/lqtue/RiverTracking/refs/heads/main/All.png" alt="Tất cả icon" class="w-10 h-10 rounded">
+            <span class="text-[10px] leading-tight">Tất cả</span>
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <aside class="hidden lg:flex w-full lg:w-96 bg-white border-l border-slate-200 flex-col z-10 shadow-xl">
@@ -187,7 +231,9 @@
     URLS: {
       RIVER_GEO: 'river.json',
       BOUNDARY: 'ProvincialBoundary.json',
-      DATA_CSV: 'https://raw.githubusercontent.com/lqtue/RiverTrackingAutomate/main/data/water_data_full_combined.csv'
+      DATA_CSV: 'https://raw.githubusercontent.com/lqtue/RiverTrackingAutomate/main/data/water_data_full_combined.csv',
+      LANDSLIDE_CSV: 'https://raw.githubusercontent.com/lqtue/RiverTrackingAutomate/main/data/landslide.csv',
+      WARD_BOUNDARY: 'WardBoundary.geojson'
     },
     COLORS: ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ec4899', '#0ea5e9', '#f59e0b', '#10b981'],
     LIMITS: { LAKES: 50, RIVERS: 50 }, // FIX: Increased limit so you see more stations
@@ -195,8 +241,9 @@
   };
 
   const State = {
-    allRecords: [], latestRecords: [], basins: [],
-    activeBasin: '__ALL__', maxAlerts: {}, geoJSON: null,
+    allRecords: [], latestRecords: [], basins: [], landslideRecords: {},
+    activeBasin: '__ALL__', activeLayer: 'all',
+    maxAlerts: {}, geoJSON: null,
     provinces: [], sections: { summary: false, lake: false, river: false },
     chartInstances: [], stationHistory: {}
   };
@@ -213,16 +260,20 @@
   const Data = {
     async init() {
       try {
-        const [geo, csv, boundary] = await Promise.all([
+        const [geo, csv, boundary, landslideCsv, wardBoundary] = await Promise.all([
           fetch(CONFIG.URLS.RIVER_GEO).then(r => r.json()),
           fetch(CONFIG.URLS.DATA_CSV).then(r => r.text()),
-          fetch(CONFIG.URLS.BOUNDARY).then(r => r.json()).catch(() => null)
+          fetch(CONFIG.URLS.BOUNDARY).then(r => r.json()).catch(() => null),
+          fetch(CONFIG.URLS.LANDSLIDE_CSV).then(r => r.text()).catch(() => ''),
+          fetch(CONFIG.URLS.WARD_BOUNDARY).then(r => r.json()).catch(() => null)
         ]);
         
         State.geoJSON = geo;
         State.provinces = boundary ? boundary.features : [];
         if(boundary) MapManager.addBoundary(boundary);
         this.processCSV(csv);
+        this.processLandslideCSV(landslideCsv);
+        if (wardBoundary) MapManager.renderLandslideRisk(wardBoundary);
         this.analyzeBasins();
         UI.initTabs();
         // UI.updateStatus(); // This is now redundant
@@ -299,6 +350,21 @@
       State.basins = Array.from(s).sort();
     },
 
+    processLandslideCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length < 2) return;
+      const headers = this.parseCSVLine(lines[0]).map(h => h.trim());
+      const records = {};
+      for(let i=1; i<lines.length; i++) {
+        if(!lines[i].trim()) continue;
+        const vals = this.parseCSVLine(lines[i]);
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = vals[idx]?.trim());
+        records[obj.commune_name_2cap] = obj;
+      }
+      State.landslideRecords = records;
+    },
+
     getRecordsForBasin(basin, onlyLatest=false) {
       const src = onlyLatest ? State.latestRecords : State.allRecords;
       return basin === '__ALL__' ? src : src.filter(r => r.basin === basin);
@@ -319,12 +385,13 @@
    * MODULE: MAP MANAGER
    */
   const MapManager = {
-    instance: null, layers: { river: null, station: null, highlight: null },
+    instance: null, layers: { river: null, station: null, highlight: null, landslide: null, landslideGeoJSON: null },
 
-    init() {
+    init() { // Default center is set here, but will be adjusted on initial load.
       this.instance = L.map('map', { 
-        center: [16, 108], zoom: 6, preferCanvas: true, zoomControl: false, attributionControl: false
+        center: [14, 108.5], zoom: 6, preferCanvas: true, zoomControl: false, attributionControl: false
       });
+      this.layers.landslide = L.layerGroup();
       // Add a dedicated layer for highlighting features like provinces
       this.layers.highlight = L.layerGroup().addTo(this.instance);
       // Add event listeners for the geolocation feature
@@ -333,14 +400,58 @@
 
       L.control.zoom({ position: 'topright' }).addTo(this.instance);
       
-      // FIX: Optimized tile loading for smoother "cache" feel
-      L.tileLayer('https://mt0.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}', {
+      L.tileLayer('https://mt0.google.com/vt/lyrs=s&hl=vi&x={x}&y={y}&z={z}', {
+        zIndex: 1,
         keepBuffer: 10,       // FIX: Keep more tiles in memory
         updateWhenIdle: false // FIX: Load tiles while panning
       }).addTo(this.instance);
       
-      this.layers.river = L.layerGroup().addTo(this.instance);
-      this.layers.station = L.layerGroup().addTo(this.instance);
+      // Add an overlay for labels with 50% opacity
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+        zIndex: 2, // Higher zIndex to appear on top
+        opacity: 0.0,
+        pane: 'shadowPane' // Use a different pane to ensure it's an overlay
+      }).addTo(this.instance);
+
+      this.layers.river = L.layerGroup();
+      this.layers.station = L.layerGroup();
+    },
+
+    renderLandslideRisk(wardBoundary) {
+      this.layers.landslide.clearLayers();
+      
+      // Filter GeoJSON to only include features with risk data to optimize
+      const featuresWithRisk = wardBoundary.features.filter(feature => 
+        State.landslideRecords[feature.properties['Phường xã mới']]
+      );
+
+      this.layers.landslideGeoJSON = L.geoJSON({ type: 'FeatureCollection', features: featuresWithRisk }, {
+        style: this.styleLandslideArea,
+        interactive: false
+      });
+      this.layers.landslide.addLayer(this.layers.landslideGeoJSON);
+    },
+
+    styleLandslideArea(feature) {
+      const communeName = feature.properties['Phường xã mới'];
+      const riskData = State.landslideRecords[communeName];
+      let color = 'transparent';
+      if (riskData) {
+        const riskLevel = riskData.nguycosatlo; // Using landslide risk, can be changed to flash flood
+        if (riskLevel === 'Rất cao') color = '#ef4444'; // red-500
+        else if (riskLevel === 'Cao') color = '#f97316'; // orange-500
+        else if (riskLevel === 'Trung bình') color = '#eab308'; // yellow-500
+      }
+
+      const isRiskView = State.activeLayer === 'risk';
+
+      return {
+        fillColor: color,
+        fillOpacity: isRiskView ? 0.8 : 0.4,
+        weight: isRiskView ? 1 : 0,
+        color: '#ffffff',
+        opacity: isRiskView ? 0.6 : 0
+      };
     },
 
     addBoundary(data) {
@@ -348,6 +459,26 @@
         style: { color: '#ffffff', weight: 1, opacity: 0.6, fillOpacity: 0 }, 
         interactive: false 
       }).addTo(this.instance);
+    },
+    
+    updateLayerVisibility() {
+        const layerState = State.activeLayer;
+        const layers = this.layers;
+
+        // Helper to add/remove layer from map
+        const setLayer = (layer, visible) => {
+            if (visible && !this.instance.hasLayer(layer)) this.instance.addLayer(layer);
+            if (!visible && this.instance.hasLayer(layer)) this.instance.removeLayer(layer);
+        };
+
+        setLayer(layers.river, layerState === 'all' || layerState === 'river_lake');
+        setLayer(layers.station, layerState === 'all' || layerState === 'river_lake');
+        setLayer(layers.landslide, layerState === 'all' || layerState === 'risk');
+
+        // Re-apply styles to landslide layer to reflect opacity/border changes
+        if (this.layers.landslideGeoJSON) {
+            this.layers.landslideGeoJSON.setStyle(this.styleLandslideArea);
+        }
     },
 
     renderBasin(basinName) {
@@ -365,9 +496,14 @@
         if (features.length) {
           const riverLayer = L.geoJSON(features, { style: this.styleRiver });
           this.layers.river.addLayer(riverLayer);
-          
-          // Zoom to the bounds of the visible rivers.
-          this.instance.flyToBounds(riverLayer.getBounds(), { padding: [20, 20], duration: 1.5 });
+
+          if (basinName === '__ALL__') {
+            // For the "All" view, set a specific default center and zoom.
+            this.instance.flyTo([14, 108.5], 7, { duration: 1.5 });
+          } else {
+            // For a specific basin, zoom to its bounds.
+            this.instance.flyToBounds(riverLayer.getBounds(), { padding: [20, 20], duration: 1.5 });
+          }
         }
       }
 
@@ -570,7 +706,23 @@
 
     toggleLegend() {
       const legend = document.getElementById('legend-container');
+      const toggleBtn = document.getElementById('legend-toggle-btn');
       legend.classList.toggle('hidden');
+      toggleBtn.classList.toggle('hidden');
+    },
+    
+    updateLayerControl() {
+      document.querySelectorAll('.layer-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.layer === State.activeLayer);
+      });
+
+      const isRiskView = State.activeLayer === 'risk';
+      const isRiverLakeView = State.activeLayer === 'river_lake';
+      const isAllView = State.activeLayer === 'all';
+
+      document.getElementById('legend-river-lake').style.display = isRiskView ? 'none' : 'grid';
+      document.getElementById('legend-risk').style.display = isRiverLakeView ? 'none' : 'block';
+      this.refreshHeight('summary'); // In case legend size changes
     },
 
     resetSections() {
@@ -840,6 +992,11 @@
       document.getElementById('basin-select').value = basinName;
       document.getElementById('sidebar-title').textContent = basinName === '__ALL__' ? 'Tất cả lưu vực' : `Lưu vực sông ${basinName}`;
       MapManager.renderBasin(basinName);
+      
+      // Ensure correct layers are visible after basin switch
+      MapManager.updateLayerVisibility();
+      UI.updateLayerControl();
+
       Charts.destroyAll(); State.stationHistory = {};
       UI.renderSummary();
       const records = Data.getRecordsForBasin(basinName);
@@ -864,6 +1021,11 @@
       const detailView = document.getElementById('detail-view');
       detailView.classList.add('opacity-0');
       setTimeout(() => detailView.classList.add('hidden'), 300); // Hide after fade out
+    },
+    switchLayer(layerName) {
+      State.activeLayer = layerName;
+      MapManager.updateLayerVisibility();
+      UI.updateLayerControl();
     },
   };
 
