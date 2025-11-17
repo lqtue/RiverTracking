@@ -344,7 +344,7 @@
         // The source time is GMT+7, but the column name says UTC. We treat it as local time to avoid double-offsetting.
         ts: parseVnDate(r['Thời gian (UTC)']),
         water: num(r['Mực nước (m)']), alert: num(r['Cảnh báo value (0-4)']) || 0,
-        storage: num(r['Dung tích (m3)']), percent: num(r['Tỷ lệ dung tích (%)']), // storage is in millions, so we'll format it later
+        storage: num(r['Dung tích (m3)']), percent: num(r['Tỷ lệ dung tích (%)']), designStorage: num(r['Dung tích TK (m3)']),
         qIn: num(r['Q đến (m3/s)']), qOut: num(r['Q xả (m3/s)']),
         bd1: num(r['BĐ1 (m)']), bd2: num(r['BĐ2 (m)']), bd3: num(r['BĐ3 (m)']),
         lat: num(r['y']), lng: num(r['x'])
@@ -863,7 +863,7 @@
                 <div class="font-bold text-xs text-slate-800">${latest.name}</div>
                 <div class="text-[10px] text-slate-500">Sông ${latest.basin} • ${latest.province || ''}</div>
               </div>
-              <div class="text-xs font-mono font-bold" style="color: ${color};">${valueText}</div>
+              <div class="text-xs font-mono font-bold" style="color: ${color};">Đầy ${valueText}</div>
             </div>
             <div class="h-32 w-full relative"><canvas id="chart-${code}" data-code="${code}"></canvas></div>
             ${type === 'lake' ? `
@@ -951,26 +951,24 @@
       }
     },
     drawLakeStorageChart(canvas, data) {
-      const chart = new Chart(canvas, { 
-        type: 'bar', // Set base type to bar for mixed chart
+      const latest = data.length ? data[data.length - 1] : {};
+      const chart = new Chart(canvas, {
+        type: 'line',
         data: { 
           labels: Data.downsample(data, 'ts'), 
           datasets: [
             { 
-              label: 'Dung tích (triệu m³)', 
+              label: 'Dung tích thực đo (triệu m³)', 
               data: Data.downsample(data, 'storage'), 
-              borderColor: '#3b82f6', borderWidth: 1.5, fill: true, backgroundColor: '#3b82f610', 
-              yAxisID: 'y', spanGaps: true,
-              type: 'line' // Override to be a line chart
+              borderColor: '#3b82f6', borderWidth: 2, fill: true, backgroundColor: '#3b82f620', tension: 0.1, spanGaps: true
             },
             { 
-              label: 'Tỷ lệ đầy', 
-              data: Data.downsample(data, 'percent'), 
-              backgroundColor: '#f9731680', borderColor: '#f97316', borderWidth: 1,
-              yAxisID: 'y1', spanGaps: true 
+              label: 'Dung tích thiết kế (triệu m³)', 
+              data: Array(Data.downsample(data, 'ts').length).fill(latest.designStorage), 
+              borderColor: '#f97316', borderWidth: 1.5, borderDash: [3,3], fill: false, spanGaps: true 
             }
         ]}, 
-        options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { ...this.commonOptions.plugins.legend, display: true } }, scales: { ...this.commonOptions.scales, y: { ...this.commonOptions.scales.y, position: 'left', grid: { drawOnChartArea: false } }, y1: { position: 'right', grid: { drawOnChartArea: true }, ticks: { ...this.commonOptions.scales.y.ticks, callback: value => `${formatDecimal(value, 2)}%` } } } } });
+        options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { ...this.commonOptions.plugins.legend, display: true } } } });
       State.chartInstances.push(chart);
     },
     drawRiverChart(canvas, data) {
