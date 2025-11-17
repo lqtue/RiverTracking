@@ -951,10 +951,26 @@
       }
     },
     drawLakeStorageChart(canvas, data) {
-      const chart = new Chart(canvas, { type: 'line', data: { labels: Data.downsample(data, 'ts'), datasets: [
-        { label: 'Dung tích (triệu m³)', data: Data.downsample(data, 'storage'), borderColor: '#3b82f6', borderWidth: 1.5, fill: true, backgroundColor: '#3b82f610', yAxisID: 'y', spanGaps: true },
-        { label: 'Tỷ lệ đầy', data: Data.downsample(data, 'percent'), borderColor: '#f97316', borderWidth: 1.5, borderDash: [3,3], yAxisID: 'y1', spanGaps: true }
-      ]}, options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { ...this.commonOptions.plugins.legend, display: true } }, scales: { ...this.commonOptions.scales, y: { ...this.commonOptions.scales.y, position: 'left', grid: { drawOnChartArea: false } }, y1: { position: 'right', grid: { drawOnChartArea: true }, ticks: { ...this.commonOptions.scales.y.ticks, callback: value => `${formatDecimal(value, 2)}%` } } } } });
+      const chart = new Chart(canvas, { 
+        type: 'bar', // Set base type to bar for mixed chart
+        data: { 
+          labels: Data.downsample(data, 'ts'), 
+          datasets: [
+            { 
+              label: 'Dung tích (triệu m³)', 
+              data: Data.downsample(data, 'storage'), 
+              borderColor: '#3b82f6', borderWidth: 1.5, fill: true, backgroundColor: '#3b82f610', 
+              yAxisID: 'y', spanGaps: true,
+              type: 'line' // Override to be a line chart
+            },
+            { 
+              label: 'Tỷ lệ đầy', 
+              data: Data.downsample(data, 'percent'), 
+              backgroundColor: '#f9731680', borderColor: '#f97316', borderWidth: 1,
+              yAxisID: 'y1', spanGaps: true 
+            }
+        ]}, 
+        options: { ...this.commonOptions, plugins: { ...this.commonOptions.plugins, legend: { ...this.commonOptions.plugins.legend, display: true } }, scales: { ...this.commonOptions.scales, y: { ...this.commonOptions.scales.y, position: 'left', grid: { drawOnChartArea: false } }, y1: { position: 'right', grid: { drawOnChartArea: true }, ticks: { ...this.commonOptions.scales.y.ticks, callback: value => `${formatDecimal(value, 2)}%` } } } } });
       State.chartInstances.push(chart);
     },
     drawRiverChart(canvas, data) {
