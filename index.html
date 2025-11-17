@@ -421,7 +421,7 @@
       // Add an overlay for labels with 50% opacity
       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
         zIndex: 2, // Higher zIndex to appear on top
-        opacity: 0.0,
+        opacity: 0.5,
         pane: 'shadowPane' // Use a different pane to ensure it's an overlay
       }).addTo(this.instance);
 
