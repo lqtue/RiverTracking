@@ -79,12 +79,12 @@
 
   <div class="flex-none bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between gap-4 z-10">
     <!-- Desktop Tabs -->
-    <div id="basin-tabs" class="hidden lg:flex gap-2 min-w-max overflow-x-auto custom-scroll">
+    <div id="basin-tabs" class="hidden lg:flex gap-1 min-w-max overflow-x-auto custom-scroll">
       <!-- Basin tabs will be populated by JS -->
     </div>
     <!-- Mobile Dropdown -->
     <div class="lg:hidden flex-1">
-        <select id="basin-select" class="w-full border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition px-2 py-1.5 bg-white"></select>
+        <select id="basin-select" class="w-full border rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition px-2 py-1.5 bg-white"></select>
     </div>
     <div id="live-status" class="flex-none flex items-center gap-2 text-xs text-slate-600 whitespace-nowrap">
       <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
@@ -352,8 +352,20 @@
     },
 
     analyzeBasins() {
-      const s = new Set(State.latestRecords.map(r => r.basin).filter(Boolean));
-      State.basins = Array.from(s).sort();
+      const basinMap = {}; // { basinName: Set<provinceName> }
+      State.latestRecords.forEach(r => {
+        if (r.basin && r.province) {
+          if (!basinMap[r.basin]) {
+            basinMap[r.basin] = new Set();
+          }
+          basinMap[r.basin].add(r.province.replace('tỉnh ', '').replace('thành phố ', ''));
+        }
+      });
+
+      State.basins = Object.keys(basinMap).sort().map(basinName => ({
+        name: basinName,
+        provinces: Array.from(basinMap[basinName]).sort().join(', ')
+      }));
     },
 
     processLandslideCSV(text) {
@@ -669,7 +681,7 @@
 
       const createBtn = (txt, val) => {
         const b = document.createElement('button');
-        b.className = 'tab-btn px-4 py-1 rounded-full bg-slate-100 text-slate-600 text-sm font-medium whitespace-nowrap hover:bg-slate-200';
+        b.className = 'tab-btn px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium whitespace-nowrap hover:bg-slate-200';
         b.textContent = txt;
         b.onclick = () => App.switchBasin(val);
         b.dataset.val = val;
@@ -685,9 +697,10 @@
 
       createBtn('Tất cả lưu vực', '__ALL__');
       createOption('Tất cả lưu vực', '__ALL__');
-      State.basins.forEach(b => {
-        createBtn(`Sông ${b}`, b);
-        createOption(`Sông ${b}`, b);
+      State.basins.forEach(basin => { // Sông Vu Gia - Thu Bồn (Quảng Nam, Đà Nẵng, Kon Tum)
+        const displayText = `${basin.name} (${basin.provinces})`;
+        createBtn(displayText, basin.name);
+        createOption(displayText, basin.name);
       });
       selectEl.onchange = (e) => App.switchBasin(e.target.value);
     },
